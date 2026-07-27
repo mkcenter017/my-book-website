@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전자책 표지 에디터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg-app:#15161A;
+    --bg-panel:#1D1F24;
+    --bg-panel-2:#24262C;
+    --bg-panel-3:#2B2D34;
+    --border:#2E3038;
+    --border-light:#3A3D46;
+    --text-primary:#EDEBE6;
+    --text-secondary:#9A9CA3;
+    --text-tertiary:#6B6D75;
+    --accent:#C1432E;
+    --accent-hover:#D85940;
+    --accent-soft:rgba(193,67,46,0.14);
+    --canvas-mat:#EFEAE0;
+    --ok:#4C9A6A;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg-app);
+    color:var(--text-primary);
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:13px;
+    overflow:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+    height:56px;
+    min-height:56px;
+    border-bottom:1px solid var(--border);
+    background:var(--bg-panel);
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand .mark{
+    width:22px;height:28px;
+    background:linear-gradient(160deg,var(--accent),#8C2E1F);
+    border-radius:2px 5px 5px 2px;
+    position:relative;
+    flex:none;
+  }
+  .brand .mark::after{
+    content:'';
+    position:absolute;left:3px;top:0;bottom:0;width:1px;
+    background:rgba(255,255,255,0.35);
+  }
+  .brand h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:0.02em;
+    margin:0;
+  }
+  .brand span.sub{
+    font-size:11px;
+    color:var(--text-tertiary);
+    font-weight:400;
+  }
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .preset-toggle{
+    display:flex;
+    gap:3px;
+    background:var(--bg-app);
+    border:1.5px solid var(--accent);
+    border-radius:24px;
+    padding:3px;
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .preset-btn{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:var(--text-secondary);
+    font-family:inherit;
+    font-weight:700;
+    font-size:12.5px;
+    padding:7px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    line-height:1.3;
+    transition:background .15s, color .15s, transform .1s;
+  }
+  .preset-btn small{
+    font-weight:500;
+    font-size:9.5px;
+    letter-spacing:0.02em;
+    opacity:0.75;
+  }
+  .preset-btn:hover{color:var(--text-primary);}
+  .preset-btn.active{
+    background:var(--accent);
+    color:#fff;
+  }
+  .preset-btn.active small{opacity:0.92;}
+  .preset-btn:active{transform:scale(0.96);}
+  .spec-tag{
+    font-size:11px;
+    color:var(--text-secondary);
+    border:1px solid var(--border-light);
+    padding:5px 10px;
+    border-radius:20px;
+    letter-spacing:0.02em;
+  }
+  .btn{
+    appearance:none;
+    border:1px solid var(--border-light);
+    background:var(--bg-panel-2);
+    color:var(--text-primary);
+    padding:8px 14px;
+    border-radius:var(--radius);
+    font-size:12.5px;
+    font-family:inherit;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:background .15s, border-color .15s, transform .1s;
+    white-space:nowrap;
+  }
+  .btn:hover{background:var(--bg-panel-3);border-color:#4A4D57;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+    font-weight:700;
+    padding:9px 18px;
+  }
+  .btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+  .btn-block{width:100%;justify-content:center;}
+  .export-group{display:flex;gap:6px;}
+  .export-group .btn-primary{padding:9px 14px;}
+  .deco-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:6px;
+    max-height:320px;
+    overflow-y:auto;
+    padding-right:2px;
+  }
+  .deco-btn{
+    width:100%;
+    aspect-ratio:1;
+    background:var(--bg-panel-2);
+    border:1px solid var(--border-light);
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    padding:6px;
+    transition:background .15s, border-color .15s, transform .1s;
+  }
+  .deco-btn:hover{background:var(--bg-panel-3);border-color:var(--accent);}
+  .deco-btn:active{transform:scale(0.93);}
+  .deco-btn img{width:100%;height:100%;object-fit:contain;pointer-events:none;}
+  .btn-ghost{background:transparent;}
+  .btn-sm{padding:5px 9px;font-size:11.5px;}
+  .btn-danger{color:#E36656;border-color:rgba(227,102,86,0.35);}
+  .btn-danger:hover{background:rgba(227,102,86,0.12);}
+
+  /* ---------- Layout ---------- */
+  .layout{
+    flex:1;
+    display:flex;
+    min-height:0;
+  }
+
+  /* ---------- Left toolbar ---------- */
+  .toolbar-left{
+    width:236px;
+    min-width:236px;
+    background:var(--bg-panel);
+    border-right:1px solid var(--border);
+    overflow-y:auto;
+    padding:16px 14px 40px;
+  }
+  .tool-section{margin-bottom:22px;}
+  .tool-section h3{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.09em;
+    color:var(--text-tertiary);
+    font-weight:700;
+    margin:0 0 10px 2px;
+  }
+  .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .tool-grid .btn{padding:10px 8px;font-size:12px;}
+  .upload-box{
+    border:1.5px dashed var(--border-light);
+    border-radius:var(--radius);
+    padding:16px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    color:var(--text-secondary);
+    font-size:12px;
+  }
+  .upload-box:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--text-primary);}
+  .upload-box .icon{font-size:20px;display:block;margin-bottom:6px;}
+  .bg-controls{margin-top:10px;display:none;}
+  .bg-controls.show{display:block;}
+  .field-row{margin-bottom:10px;}
+  .field-row label{
+    display:flex;
+    justify-content:space-between;
+    font-size:11.5px;
+    color:var(--text-secondary);
+    margin-bottom:5px;
+  }
+  input[type="range"]{
+    width:100%;
+    accent-color:var(--accent);
+    height:4px;
+  }
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 10px;
+    background:var(--bg-panel-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+  }
+  .toggle-row span{font-size:12px;color:var(--text-secondary);}
+  .switch{
+    width:34px;height:19px;border-radius:20px;background:var(--bg-panel-3);
+    border:1px solid var(--border-light);
+    position:relative;cursor:pointer;flex:none;transition:background .15s;
+  }
+  .switch.on{background:var(--accent);border-color:var(--accent);}
+  .switch::after{
+    content:'';position:absolute;top:1px;left:1px;
+    width:15px;height:15px;border-radius:50%;background:#fff;
+    transition:transform .15s;
+  }
+  .switch.on::after{transform:translateX(15px);}
+  .hint{font-size:11px;color:var(--text-tertiary);line-height:1.5;margin-top:8px;}
+  .tip-badge{
+    margin-top:10px;
+    font-size:11.5px;
+    line-height:1.55;
+    color:var(--text-primary);
+    background:var(--accent-soft);
+    border:1px solid rgba(193,67,46,0.35);
+    border-radius:var(--radius);
+    padding:9px 10px;
+  }
+  .tip-badge b{color:#F0A08F;}
+
+  /* ---------- Center canvas ---------- */
+  .canvas-area{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+    overflow:auto;
+    background:
+      radial-gradient(ellipse at 50% 0%, #1B1C21 0%, #101115 70%);
+    padding:20px;
+    position:relative;
+  }
+  .canvas-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  .canvas-frame{
+    position:relative;
+    background:var(--canvas-mat);
+    padding:14px;
+    border-radius:3px;
+    box-shadow:0 25px 60px -12px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03);
+  }
+  .canvas-frame::before{
+    content:'';
+    position:absolute;
+    left:14px;top:14px;bottom:14px;width:10px;
+    background:linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0));
+    pointer-events:none;
+    z-index:5;
+  }
+  #cover-canvas-wrapper{position:relative;line-height:0;}
+  .safe-guide{
+    position:absolute;
+    inset:5%;
+    border:1.5px dashed var(--accent);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .15s;
+    z-index:10;
+  }
+  .safe-guide.show{opacity:0.85;}
+  .safe-guide::after{
+    content:'안전 여백 5%';
+    position:absolute;
+    top:-20px;left:0;
+    font-size:10px;
+    color:var(--accent);
+    font-family:'Noto Sans KR',sans-serif;
+    letter-spacing:0.02em;
+  }
+  .canvas-meta{
+    font-size:11.5px;
+    color:var(--text-tertiary);
+    letter-spacing:0.03em;
+    display:flex;
+    gap:14px;
+  }
+  .canvas-meta b{color:var(--text-secondary);font-weight:500;}
+
+  /* ---------- Right panel ---------- */
+  .panel-right{
+    width:270px;
+    min-width:270px;
+    background:var(--bg-panel);
+    border-left:1px solid var(--border);
+    overflow-y:auto;
+    padding:16px 16px 40px;
+  }
+  .panel-right h3{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.09em;
+    color:var(--text-tertiary);
+    font-weight:700;
+    margin:0 0 12px 2px;
+  }
+  .empty-state{
+    color:var(--text-tertiary);
+    font-size:12.5px;
+    text-align:center;
+    padding:60px 10px 30px;
+    line-height:1.7;
+  }
+  .empty-state .icon{font-size:26px;display:block;margin-bottom:10px;opacity:0.6;}
+  .prop-group{margin-bottom:16px;}
+  .prop-group label{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:11.5px;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+  }
+  .prop-group label .val{color:var(--text-primary);font-variant-numeric:tabular-nums;}
+  select, input[type="number"], input[type="text"], textarea{
+    width:100%;
+    background:var(--bg-panel-2);
+    border:1px solid var(--border-light);
+    color:var(--text-primary);
+    padding:8px 9px;
+    border-radius:var(--radius);
+    font-size:12.5px;
+    font-family:inherit;
+  }
+  select:focus, input:focus, textarea:focus{outline:1px solid var(--accent);border-color:var(--accent);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  input[type="color"]{
+    -webkit-appearance:none;
+    width:100%;height:32px;border:1px solid var(--border-light);border-radius:var(--radius);
+    background:var(--bg-panel-2);padding:2px;cursor:pointer;
+  }
+  input[type="color"]::-webkit-color-swatch{border-radius:3px;border:none;}
+  .seg{
+    display:flex;
+    border:1px solid var(--border-light);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .seg button{
+    flex:1;
+    background:var(--bg-panel-2);
+    border:none;
+    color:var(--text-secondary);
+    padding:8px 0;
+    cursor:pointer;
+    font-size:12.5px;
+    border-right:1px solid var(--border-light);
+    font-family:inherit;
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--accent);color:#fff;}
+  .divider{height:1px;background:var(--border);margin:16px 0;}
+  .panel-actions{display:flex;gap:8px;margin-top:4px;}
+
+  .thumb-block{
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+  }
+  .thumb-title{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:10px;
+  }
+  .thumb-title span{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-tertiary);font-weight:700;}
+  .thumb-shelf{
+    background:#0F1013;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    display:flex;
+    gap:14px;
+    align-items:flex-end;
+  }
+  .thumb-card{flex:none;}
+  .thumb-card img{
+    display:block;
+    border-radius:2px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.5);
+  }
+  .thumb-card.large img{width:70px;height:112px;object-fit:cover;}
+  .thumb-card.small img{width:38px;height:61px;object-fit:cover;}
+  .thumb-cap{font-size:9.5px;color:var(--text-tertiary);text-align:center;margin-top:5px;}
+
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#38393f;border-radius:10px;}
+  ::-webkit-scrollbar-thumb:hover{background:#48494f;}
+
+  @media (max-width:980px){
+    .toolbar-left{width:190px;min-width:190px;}
+    .panel-right{width:230px;min-width:230px;}
+  }
+</style>
+</head>
+<body>
+<canvas id="iconRenderCanvas" width="64" height="64" style="display:none;"></canvas>
+<div id="app">
+
+  <header>
+    <div class="brand">
+      <div class="mark"></div>
+      <h1>표지공방</h1>
+      <span class="sub">E-book Cover Editor</span>
+    </div>
+    <div class="header-right">
+      <div class="preset-toggle" id="presetToggle" title="선택한 대상 기준 사이즈로 내보냅니다">
+        <button type="button" class="preset-btn active" data-preset="general">
+          일반용<small>1600×2560</small>
+        </button>
+        <button type="button" class="preset-btn" data-preset="yupaper">
+          유페이퍼용<small>1375×2200</small>
+        </button>
+      </div>
+      <span class="spec-tag" id="specTag" title="크롬/엣지 브라우저에서는 다운로드 시 저장 위치를 직접 선택할 수 있어요">1600 × 2560 px · RGB</span>
+      <button class="btn" id="btnReset">초기화</button>
+      <div class="export-group">
+        <button class="btn btn-primary" id="btnExportPNG" title="투명 배경 지원, 최고 화질">PNG</button>
+        <button class="btn btn-primary" id="btnExportJPG" title="용량이 작아 업로드에 유리">JPG</button>
+        <button class="btn btn-primary" id="btnExportPDF" title="인쇄·투고용 문서 포맷">PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT TOOLBAR -->
+    <aside class="toolbar-left">
+
+      <div class="tool-section">
+        <h3>배경 이미지</h3>
+        <label class="upload-box" id="uploadBox">
+          <span class="icon">🖼️</span>
+          이미지 업로드 (JPG / PNG)
+          <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden>
+        </label>
+        <div class="bg-controls" id="bgControls">
+          <div class="field-row">
+            <label>배경 확대/축소 <span class="val" id="bgZoomVal">100%</span></label>
+            <input type="range" id="bgZoom" min="50" max="300" value="100">
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-sm btn-block" id="btnCenterBg">중앙 정렬</button>
+            <button class="btn btn-sm btn-danger" id="btnRemoveBg">삭제</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3>텍스트 추가</h3>
+        <div class="tool-grid">
+          <button class="btn" data-add-text="title">제목</button>
+          <button class="btn" data-add-text="subtitle">부제</button>
+          <button class="btn" data-add-text="author">저자명</button>
+          <button class="btn" data-add-text="publisher">출판사명</button>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3>도형 &amp; 오버레이</h3>
+        <div class="tool-grid">
+          <button class="btn" data-add-shape="rect">사각형</button>
+          <button class="btn" data-add-shape="circle">원</button>
+        </div>
+        <div class="tool-grid" style="margin-top:8px;">
+          <button class="btn" style="grid-column:1/3;" data-add-shape="overlay">반투명 가독성 오버레이</button>
+        </div>
+        <p class="hint">오버레이는 배경이 복잡하거나 어두울 때 글자 가독성을 높이는 용도입니다. 크기·위치·투명도를 자유롭게 조절하세요.</p>
+        <div class="tip-badge">
+          💡 <b>도형 안에 텍스트도 넣을 수 있어요.</b> 도형을 선택한 뒤 텍스트를 선택하면, 텍스트 속성 패널에 "이 도형 중앙으로 이동" 버튼이 나타납니다.
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3>장식 도형 (약 30종)</h3>
+        <div class="deco-grid" id="decoGrid"></div>
+        <p class="hint">클릭하면 캔버스 중앙에 추가됩니다. 추가 후 우측 패널에서 색상·투명도·테두리를 조절하세요. 아이콘에 마우스를 올리면 이름이 표시됩니다.</p>
+        <div class="tip-badge">
+          💡 배지·리본·왕관 같은 도형은 안에 텍스트를 넣으면 더 예뻐요. 도형 선택 → 텍스트 선택 → "이 도형 중앙으로 이동" 버튼을 눌러보세요.
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3>가이드</h3>
+        <div class="toggle-row" id="guideToggle">
+          <span>5% 안전 여백 가이드선</span>
+          <div class="switch" id="guideSwitch"></div>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3>플랫폼 체크리스트</h3>
+        <p class="hint">
+          표지에는 <b style="color:var(--text-secondary)">책 제목 · 저자명 · 출판사명</b>이 반드시 표기되어야 승인 절차에서 반려되지 않습니다. 가장자리에 불필요한 흰 여백을 남기지 마세요.
+        </p>
+        <div class="tip-badge">
+          💡 상단의 <b>내보내기 대상</b> 선택창에서 "유페이퍼용"과 "일반용(부크크·교보 등)"을 고를 수 있어요. 유페이퍼는 권장 사이즈(최대 1400×2200px)가 더 작아서 별도 프리셋으로 분리했습니다.
+          <br>· <b>부크크</b>는 PNG를 받지 않으니 JPG 또는 PDF로 내보내세요.
+          <br>· <b>유페이퍼</b>는 "유페이퍼용"으로 전환한 뒤 내보내세요.
+          <br>· 최종 업로드 전에는 각 플랫폼의 최신 가이드를 한 번 더 확인하시는 걸 권장드려요.
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER CANVAS -->
+    <main class="canvas-area">
+      <div class="canvas-wrap">
+        <div class="canvas-frame">
+          <div id="cover-canvas-wrapper">
+            <canvas id="cover-canvas"></canvas>
+            <div class="safe-guide" id="safeGuide"></div>
+          </div>
+        </div>
+        <div class="canvas-meta">
+          <span><b>내보내기 크기</b> <span id="exportSizeMeta">1600×2560px (일반용)</span></span>
+          <span><b>비율</b> 1 : 1.6</span>
+          <span><b>화면 배율</b> 31%</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="panel-right">
+
+      <div id="emptyState" class="empty-state">
+        <span class="icon">◧</span>
+        캔버스에서 오브젝트를<br>선택하면 세부 속성이<br>여기에 표시됩니다.
+      </div>
+
+      <div id="textPanel" style="display:none;">
+        <h3>텍스트 속성</h3>
+
+        <div class="prop-group">
+          <label>내용</label>
+          <textarea id="txtContent" rows="2"></textarea>
+        </div>
+
+        <div class="prop-group">
+          <label>폰트</label>
+          <select id="txtFont">
+            <option value="'Noto Serif KR', serif">Noto Serif KR (명조)</option>
+            <option value="'Noto Sans KR', sans-serif">Noto Sans KR (고딕)</option>
+            <option value="'Nanum Myeongjo', serif">나눔명조</option>
+            <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+            <option value="'Black Han Sans', sans-serif">Black Han Sans (임팩트)</option>
+            <option value="'Gowun Batang', serif">고운바탕</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Arial, sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="row2 prop-group">
+          <div>
+            <label>크기 <span class="val" id="txtSizeVal"></span></label>
+            <input type="range" id="txtSize" min="12" max="220" value="48">
+          </div>
+          <div>
+            <label>행간 <span class="val" id="txtLHVal"></span></label>
+            <input type="range" id="txtLH" min="0.8" max="2.4" step="0.05" value="1.15">
+          </div>
+        </div>
+
+        <div class="prop-group">
+          <label>정렬</label>
+          <div class="seg" id="txtAlign">
+            <button data-align="left">좌</button>
+            <button data-align="center" class="active">중앙</button>
+            <button data-align="right">우</button>
+          </div>
+        </div>
+
+        <div class="row2 prop-group">
+          <div>
+            <label>색상</label>
+            <input type="color" id="txtColor" value="#1a1a1a">
+          </div>
+          <div>
+            <label>굵기</label>
+            <div class="seg" id="txtWeight">
+              <button data-weight="400">보통</button>
+              <button data-weight="700" class="active">굵게</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-group">
+          <label>자간 <span class="val" id="txtLSVal">0</span></label>
+          <input type="range" id="txtLS" min="-100" max="400" value="0">
+        </div>
+
+        <div class="prop-group">
+          <label>불투명도 <span class="val" id="txtOpVal">100%</span></label>
+          <input type="range" id="txtOp" min="0" max="100" value="100">
+        </div>
+
+        <div class="divider"></div>
+        <div class="panel-actions">
+          <button class="btn btn-sm btn-block btn-primary" id="btnMoveTextToShape">▣ 이 도형 중앙으로 이동</button>
+        </div>
+        <p class="hint" id="moveTargetHint">먼저 캔버스에서 도형을 한 번 선택해두면, 이 버튼을 눌렀을 때 그 도형 정중앙으로 텍스트가 이동합니다.</p>
+
+        <div class="divider"></div>
+        <div class="panel-actions">
+          <button class="btn btn-sm btn-block" data-zorder="front">맨 앞으로</button>
+          <button class="btn btn-sm btn-block" data-zorder="back">맨 뒤로</button>
+        </div>
+        <div class="panel-actions" style="margin-top:8px;">
+          <button class="btn btn-sm btn-block btn-danger" id="btnDeleteText">이 텍스트 삭제</button>
+        </div>
+      </div>
+
+      <div id="shapePanel" style="display:none;">
+        <h3>도형 속성</h3>
+
+        <div class="prop-group">
+          <label>채우기 색상</label>
+          <input type="color" id="shpFill" value="#000000">
+        </div>
+
+        <div class="prop-group">
+          <label>불투명도 <span class="val" id="shpOpVal">100%</span></label>
+          <input type="range" id="shpOp" min="0" max="100" value="100">
+        </div>
+
+        <div class="row2 prop-group">
+          <div>
+            <label>테두리 색상</label>
+            <input type="color" id="shpStroke" value="#000000">
+          </div>
+          <div>
+            <label>테두리 두께 <span class="val" id="shpStrokeWVal">0</span></label>
+            <input type="range" id="shpStrokeW" min="0" max="30" value="0">
+          </div>
+        </div>
+
+        <div class="prop-group">
+          <label>모서리 둥글기 <span class="val" id="shpRadiusVal">0</span></label>
+          <input type="range" id="shpRadius" min="0" max="200" value="0">
+        </div>
+
+        <p class="hint">텍스트를 도형 안으로 넣으려면: 이 도형을 먼저 선택(방금 하셨습니다) → 왼쪽에서 텍스트를 추가하거나 기존 텍스트를 선택 → 텍스트 속성 패널의 "이 도형 중앙으로 이동" 버튼을 누르세요.</p>
+
+        <div class="divider"></div>
+        <div class="panel-actions">
+          <button class="btn btn-sm btn-block" data-zorder="front">맨 앞으로</button>
+          <button class="btn btn-sm btn-block" data-zorder="back">맨 뒤로</button>
+        </div>
+        <div class="panel-actions" style="margin-top:8px;">
+          <button class="btn btn-sm btn-block btn-danger" id="btnDeleteShape">이 도형 삭제</button>
+        </div>
+      </div>
+
+      <div id="groupPanel" style="display:none;">
+        <h3>그룹</h3>
+        <div id="groupMultiActions" style="display:none;">
+          <p class="hint">여러 오브젝트가 함께 선택되었습니다. 하나로 묶으면 이후에는 한 번에 이동·크기 조절할 수 있어요.</p>
+          <button class="btn btn-block btn-primary" id="btnGroupNow">그룹으로 묶기</button>
+        </div>
+        <div id="groupUngroupActions" style="display:none;">
+          <p class="hint">그룹이 선택되었습니다. 그룹을 풀면 다시 각각의 오브젝트로 나뉘어 개별 편집할 수 있어요.</p>
+          <button class="btn btn-block" id="btnUngroupNow">그룹 해제</button>
+          <div class="panel-actions" style="margin-top:8px;">
+            <button class="btn btn-sm btn-block btn-danger" id="btnDeleteGroup">이 그룹 삭제</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="bgPanel" style="display:none;">
+        <h3>배경 이미지 속성</h3>
+        <div class="prop-group">
+          <label>확대/축소 <span class="val" id="bgZoomVal2">100%</span></label>
+          <input type="range" id="bgZoom2" min="50" max="300" value="100">
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-sm btn-block" id="btnCenterBg2">중앙 정렬</button>
+        </div>
+      </div>
+
+      <div class="thumb-block">
+        <div class="thumb-title"><span>실시간 썸네일 미리보기</span></div>
+        <div class="thumb-shelf">
+          <div class="thumb-card large">
+            <img id="thumbLarge" src="" alt="미리보기">
+            <div class="thumb-cap">서점 상세</div>
+          </div>
+          <div class="thumb-card small">
+            <img id="thumbSmall" src="" alt="미리보기">
+            <div class="thumb-cap">모바일 목록</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- Constants ----------
+  // The editing canvas is always laid out at a fixed 1:1.6 ratio (500x800
+  // on screen, using a fixed 3.2x reference for on-screen font-size math).
+  // What changes between platforms is only the *exported* pixel size,
+  // controlled by the preset dropdown in the header — that uses a
+  // separate multiplier computed at export time (see getExportMultiplier),
+  // so switching presets never changes how the design looks while editing.
+  var EXPORT_PRESETS = {
+    general: { w:1600, h:2560, label:'일반용' },
+    yupaper: { w:1375, h:2200, label:'유페이퍼용' } // stays within 유페이퍼 권장 최대 1400×2200px
+  };
+  var currentPresetKey = 'general';
+  var DISPLAY_W = 500, DISPLAY_H = 800; // fixed on-screen editing size, ratio 1:1.6
+  var MULTIPLIER = 1600 / DISPLAY_W; // 3.2 — fixed reference used only for on-screen font-size display
+  function getExportMultiplier(){ return EXPORT_PRESETS[currentPresetKey].w / DISPLAY_W; }
+
+  var canvasEl = document.getElementById('cover-canvas');
+  var canvas = new fabric.Canvas('cover-canvas', {
+    width: DISPLAY_W,
+    height: DISPLAY_H,
+    backgroundColor: '#FFFFFF',
+    preserveObjectStacking: true
+  });
+
+  var bgImage = null;
+  var bgBaseScale = 1;
+
+  // ---------- Universal on-canvas delete control (X badge on every object) ----------
+  var DELETE_CTRL = new fabric.Control({
+    x: 0.5,
+    y: -0.5,
+    offsetX: 14,
+    offsetY: -14,
+    cursorStyle: 'pointer',
+    mouseUpHandler: function(eventData, transform){
+      var target = transform.target;
+      var cvs = target.canvas;
+      if(!cvs) return true;
+      cvs.remove(target);
+      cvs.discardActiveObject();
+      cvs.requestRenderAll();
+      showPanel('empty');
+      updateThumbnails();
+      return true;
+    },
+    render: function(ctx, left, top, styleOverride, fabricObject){
+      var r = 11;
+      ctx.save();
+      ctx.translate(left, top);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#C1432E';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-4, -4); ctx.lineTo(4, 4);
+      ctx.moveTo(4, -4); ctx.lineTo(-4, 4);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+  // fabric.Textbox (and a couple of other classes) keep their OWN cloned
+  // `controls` object instead of sharing fabric.Object.prototype.controls,
+  // so adding the control only at the Object level silently misses Textbox.
+  // Attach it explicitly everywhere we actually use, so delete always works.
+  [fabric.Object, fabric.Textbox, fabric.IText, fabric.Text, fabric.Rect,
+   fabric.Circle, fabric.Ellipse, fabric.Polygon, fabric.Path, fabric.Line,
+   fabric.Group, fabric.Image].forEach(function(klass){
+    if(klass && klass.prototype && klass.prototype.controls){
+      klass.prototype.controls.deleteControl = DELETE_CTRL;
+    }
+  });
+
+  // Bigger, easier-to-grab resize handles for every object (text & shapes
+  // already support drag-resize by default in Fabric; this just makes the
+  // handles easier to see and click).
+  fabric.Object.prototype.cornerColor = '#C1432E';
+  fabric.Object.prototype.cornerStrokeColor = '#ffffff';
+  fabric.Object.prototype.cornerSize = 13;
+  fabric.Object.prototype.transparentCorners = false;
+  fabric.Object.prototype.borderColor = '#C1432E';
+  fabric.Object.prototype.cornerStyle = 'circle';
+  fabric.Object.prototype.padding = 2;
+
+  // ---------- Helpers ----------
+  function $(id){ return document.getElementById(id); }
+  function keepBackgroundAtBottom(){
+    if(bgImage){ canvas.sendToBack(bgImage); }
+  }
+
+  function pxToDisplay(v){ return v / MULTIPLIER; }
+
+  // ---------- Background image ----------
+  $('fileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      fabric.Image.fromURL(ev.target.result, function(img){
+        if(bgImage){ canvas.remove(bgImage); }
+        var scale = Math.max(DISPLAY_W / img.width, DISPLAY_H / img.height);
+        bgBaseScale = scale;
+        img.set({
+          left: DISPLAY_W/2,
+          top: DISPLAY_H/2,
+          originX: 'center',
+          originY: 'center',
+          scaleX: scale,
+          scaleY: scale,
+          selectable: true,
+          hasRotatingPoint: false
+        });
+        img.data = { type: 'background' };
+        canvas.add(img);
+        canvas.sendToBack(img);
+        bgImage = img;
+        canvas.setActiveObject(img);
+        $('bgControls').classList.add('show');
+        $('bgZoom').value = 100;
+        $('bgZoomVal').textContent = '100%';
+        canvas.requestRenderAll();
+        updateThumbnails();
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+
+  function setBgZoomPercent(pct){
+    if(!bgImage) return;
+    var s = bgBaseScale * (pct/100);
+    bgImage.set({ scaleX: s, scaleY: s });
+    bgImage.setCoords();
+    canvas.requestRenderAll();
+    updateThumbnails();
+  }
+  $('bgZoom').addEventListener('input', function(){
+    $('bgZoomVal').textContent = this.value + '%';
+    $('bgZoom2').value = this.value;
+    $('bgZoomVal2').textContent = this.value + '%';
+    setBgZoomPercent(this.value);
+  });
+  $('bgZoom2').addEventListener('input', function(){
+    $('bgZoomVal2').textContent = this.value + '%';
+    $('bgZoom').value = this.value;
+    $('bgZoomVal').textContent = this.value + '%';
+    setBgZoomPercent(this.value);
+  });
+  function centerBg(){
+    if(!bgImage) return;
+    bgImage.set({ left: DISPLAY_W/2, top: DISPLAY_H/2 });
+    bgImage.setCoords();
+    canvas.requestRenderAll();
+    updateThumbnails();
+  }
+  $('btnCenterBg').addEventListener('click', centerBg);
+  $('btnCenterBg2').addEventListener('click', centerBg);
+  $('btnRemoveBg').addEventListener('click', function(){
+    if(!bgImage) return;
+    canvas.remove(bgImage);
+    bgImage = null;
+    $('bgControls').classList.remove('show');
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+
+  // ---------- Text ----------
+  var textPresets = {
+    title:      { text:'책 제목을 입력하세요', fontSize:88, fontFamily:"'Noto Serif KR', serif", fontWeight:700, top: DISPLAY_H*0.36, fill:'#1a1a1a' },
+    subtitle:   { text:'부제를 입력하세요',     fontSize:38, fontFamily:"'Noto Sans KR', sans-serif", fontWeight:400, top: DISPLAY_H*0.50, fill:'#333333' },
+    author:     { text:'저자명',                fontSize:34, fontFamily:"'Noto Serif KR', serif",   fontWeight:400, top: DISPLAY_H*0.80, fill:'#1a1a1a' },
+    publisher:  { text:'출판사명',              fontSize:24, fontFamily:"'Noto Sans KR', sans-serif", fontWeight:400, top: DISPLAY_H*0.90, fill:'#555555' }
+  };
+
+  document.querySelectorAll('[data-add-text]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = btn.getAttribute('data-add-text');
+      var p = textPresets[key];
+      var tb = new fabric.Textbox(p.text, {
+        left: DISPLAY_W/2,
+        top: p.top,
+        width: DISPLAY_W*0.8,
+        fontSize: p.fontSize/MULTIPLIER < 8 ? p.fontSize : p.fontSize, // keep display-space size
+        fontFamily: p.fontFamily,
+        fontWeight: p.fontWeight,
+        fill: p.fill,
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+        lineHeight: 1.15,
+        charSpacing: 0,
+        splitByGrapheme: false
+      });
+      // scale font size down since our display canvas is 1/MULTIPLIER of export size,
+      // but we want the *exported* size to roughly equal the preset (which is export-scale).
+      tb.set('fontSize', p.fontSize / MULTIPLIER);
+      tb.data = { type:'text', role:key };
+      canvas.add(tb);
+      canvas.setActiveObject(tb);
+      keepBackgroundAtBottom();
+      canvas.requestRenderAll();
+      updateThumbnails();
+    });
+  });
+
+  // ---------- Shapes ----------
+  document.querySelectorAll('[data-add-shape]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var kind = btn.getAttribute('data-add-shape');
+      var obj;
+      if(kind === 'rect'){
+        obj = new fabric.Rect({
+          left: DISPLAY_W/2, top: DISPLAY_H/2, originX:'center', originY:'center',
+          width: 220, height: 140, fill: 'rgba(20,20,20,0.9)', stroke:'', strokeWidth:0, rx:0, ry:0
+        });
+        obj.data = { type:'shape', kind:'rect' };
+      } else if(kind === 'circle'){
+        obj = new fabric.Circle({
+          left: DISPLAY_W/2, top: DISPLAY_H/2, originX:'center', originY:'center',
+          radius: 80, fill:'rgba(20,20,20,0.9)', stroke:'', strokeWidth:0
+        });
+        obj.data = { type:'shape', kind:'circle' };
+      } else if(kind === 'overlay'){
+        obj = new fabric.Rect({
+          left: DISPLAY_W/2, top: DISPLAY_H*0.82, originX:'center', originY:'center',
+          width: DISPLAY_W, height: DISPLAY_H*0.36, fill:'rgba(0,0,0,0.42)', stroke:'', strokeWidth:0
+        });
+        obj.data = { type:'shape', kind:'rect' };
+      }
+      canvas.add(obj);
+      canvas.setActiveObject(obj);
+      keepBackgroundAtBottom();
+      canvas.requestRenderAll();
+      updateThumbnails();
+    });
+  });
+
+  // ---------- Decorative shape library (~30 book-cover shapes) ----------
+  var DECO_COLOR = '#1a1a1a';   // default color when added to the cover
+  var ICON_COLOR = '#C7C9D1';   // color used for the small sidebar preview icons
+
+  function regPoly(sides, R, rotDeg){
+    var pts = [], rot = (rotDeg===undefined?-90:rotDeg) * Math.PI/180;
+    for(var i=0;i<sides;i++){
+      var a = rot + i*2*Math.PI/sides;
+      pts.push({ x: R*Math.cos(a), y: R*Math.sin(a) });
+    }
+    return pts;
+  }
+  function starPts(spikes, R, r, rotDeg){
+    var pts = [], rot = (rotDeg===undefined?-90:rotDeg) * Math.PI/180, step = Math.PI/spikes;
+    for(var i=0;i<spikes*2;i++){
+      var rad = (i%2===0) ? R : r;
+      var a = rot + i*step;
+      pts.push({ x: rad*Math.cos(a), y: rad*Math.sin(a) });
+    }
+    return pts;
+  }
+  function buildLaurelBranch(R, color, mirror){
+    var leaves = [];
+    var leafCount = 7;
+    var aStart = 250, aEnd = 110; // sweep along the left arc -> forms a "(" curve
+    for(var i=0;i<leafCount;i++){
+      var t = i/(leafCount-1);
+      var ang = (aStart + t*(aEnd-aStart)) * Math.PI/180;
+      var rad = R*0.9;
+      var lx = rad*Math.cos(ang), ly = rad*Math.sin(ang);
+      leaves.push(new fabric.Ellipse({
+        rx: R*0.11, ry: R*0.26,
+        left: lx, top: ly, originX:'center', originY:'center',
+        angle: (ang*180/Math.PI), fill: color
+      }));
+    }
+    var g = new fabric.Group(leaves);
+    if(mirror){ g.set('flipX', true); }
+    return g;
+  }
+
+  var shapeLibrary = [
+    { id:'star5', label:'별', build:function(R,c){ return new fabric.Polygon(starPts(5,R,R*0.42), {fill:c}); } },
+    { id:'star5o', label:'별 (아웃라인)', build:function(R,c){ return new fabric.Polygon(starPts(5,R,R*0.42), {fill:'', stroke:c, strokeWidth:Math.max(2,R*0.045)}); } },
+    { id:'star6', label:'육각별', build:function(R,c){ return new fabric.Polygon(starPts(6,R,R*0.55), {fill:c}); } },
+    { id:'sunburst', label:'선버스트 배지', build:function(R,c){ return new fabric.Polygon(starPts(22,R,R*0.86), {fill:c}); } },
+    { id:'sunburstFine', label:'선버스트 배지(세밀)', build:function(R,c){ return new fabric.Polygon(starPts(34,R,R*0.9), {fill:c}); } },
+    { id:'diamond', label:'다이아몬드', build:function(R,c){ return new fabric.Polygon(regPoly(4,R,-90), {fill:c}); } },
+    { id:'hexagon', label:'육각형', build:function(R,c){ return new fabric.Polygon(regPoly(6,R,-90), {fill:c}); } },
+    { id:'pentagon', label:'오각형', build:function(R,c){ return new fabric.Polygon(regPoly(5,R,-90), {fill:c}); } },
+    { id:'triUp', label:'삼각형', build:function(R,c){ return new fabric.Polygon(regPoly(3,R,-90), {fill:c}); } },
+    { id:'triDown', label:'역삼각형', build:function(R,c){ return new fabric.Polygon(regPoly(3,R,90), {fill:c}); } },
+    { id:'ellipse', label:'타원', build:function(R,c){ return new fabric.Ellipse({rx:R, ry:R*0.68, fill:c}); } },
+    { id:'ring', label:'원형 링', build:function(R,c){ return new fabric.Circle({radius:R*0.85, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.12)}); } },
+    { id:'rectFrame', label:'사각 프레임', build:function(R,c){ return new fabric.Rect({width:R*1.7, height:R*1.7, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.1)}); } },
+    { id:'doubleRing', label:'이중 원형 프레임', build:function(R,c){
+        var o1 = new fabric.Circle({radius:R*0.85, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.06)});
+        var o2 = new fabric.Circle({radius:R*0.68, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.06)});
+        return new fabric.Group([o1,o2]);
+      } },
+    { id:'corners', label:'모서리 브라켓', build:function(R,c){
+        var L = R*0.5, sw = Math.max(2,R*0.08);
+        var d1 = 'M '+(-R)+' '+(-R+L)+' L '+(-R)+' '+(-R)+' L '+(-R+L)+' '+(-R);
+        var d2 = 'M '+(R-L)+' '+(-R)+' L '+R+' '+(-R)+' L '+R+' '+(-R+L);
+        var d3 = 'M '+R+' '+(R-L)+' L '+R+' '+R+' L '+(R-L)+' '+R;
+        var d4 = 'M '+(-R+L)+' '+R+' L '+(-R)+' '+R+' L '+(-R)+' '+(R-L);
+        var opts = {fill:'', stroke:c, strokeWidth:sw, strokeLineCap:'square'};
+        return new fabric.Group([
+          new fabric.Path(d1, opts), new fabric.Path(d2, opts),
+          new fabric.Path(d3, opts), new fabric.Path(d4, opts)
+        ]);
+      } },
+    { id:'arch', label:'아치형 프레임', build:function(R,c){
+        var w = R*0.85, topY = -R*0.85, bottomY = R*0.85;
+        var d = 'M '+(-w)+' '+bottomY+' L '+(-w)+' '+topY+' A '+w+' '+w+' 0 0 1 '+w+' '+topY+' L '+w+' '+bottomY+' Z';
+        return new fabric.Path(d, {fill:'', stroke:c, strokeWidth:Math.max(2,R*0.05)});
+      } },
+    { id:'laurelPair', label:'월계수 리스 (세트)', build:function(R,c){
+        var left = buildLaurelBranch(R*0.85, c, false);
+        var right = buildLaurelBranch(R*0.85, c, true);
+        left.set({left:-R*0.5, top:0, originX:'center', originY:'center'});
+        right.set({left:R*0.5, top:0, originX:'center', originY:'center'});
+        return new fabric.Group([left, right]);
+      } },
+    { id:'laurelLeft', label:'월계수 가지(좌)', build:function(R,c){ return buildLaurelBranch(R, c, false); } },
+    { id:'laurelRight', label:'월계수 가지(우)', build:function(R,c){ return buildLaurelBranch(R, c, true); } },
+    { id:'ribbon', label:'리본 배너', build:function(R,c){
+        var pts = [
+          {x:-1.4*R,y:-0.4*R},{x:1.1*R,y:-0.4*R},{x:1.4*R,y:0},
+          {x:1.1*R,y:0.4*R},{x:-1.4*R,y:0.4*R},{x:-1.1*R,y:0}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'ribbonFold', label:'접힌 리본', build:function(R,c){
+        var pts = [
+          {x:-1.4*R,y:-0.4*R},{x:-1.1*R,y:0},{x:-1.4*R,y:0.4*R},
+          {x:1.4*R,y:0.4*R},{x:1.1*R,y:0},{x:1.4*R,y:-0.4*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'shield', label:'방패 배지', build:function(R,c){
+        var pts = [
+          {x:-R,y:-0.8*R},{x:R,y:-0.8*R},{x:R,y:0.15*R},
+          {x:0,y:1.1*R},{x:-R,y:0.15*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'crown', label:'왕관', build:function(R,c){
+        var pts = [
+          {x:-R,y:0.9*R},{x:-R,y:0.5*R},{x:-0.66*R,y:-0.05*R},{x:-0.33*R,y:0.35*R},
+          {x:0,y:-0.85*R},{x:0.33*R,y:0.35*R},{x:0.66*R,y:-0.05*R},{x:R,y:0.5*R},{x:R,y:0.9*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'crescent', label:'초승달', build:function(R,c){
+        var r = R*0.82, off = R*0.16;
+        var d = 'M 0 '+(-R)+' A '+R+' '+R+' 0 1 0 0 '+R+' A '+R+' '+R+' 0 1 0 0 '+(-R)+' Z ' +
+                'M '+off+' '+(-r)+' A '+r+' '+r+' 0 1 0 '+off+' '+r+' A '+r+' '+r+' 0 1 0 '+off+' '+(-r)+' Z';
+        return new fabric.Path(d, {fill:c, fillRule:'evenodd'});
+      } },
+    { id:'mountain', label:'산 실루엣', build:function(R,c){
+        var pts = [
+          {x:-1.3*R,y:0.6*R},{x:-0.5*R,y:-0.5*R},{x:-0.1*R,y:0},
+          {x:0.35*R,y:-0.75*R},{x:1.3*R,y:0.6*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'openBook', label:'펼친 책', build:function(R,c){
+        var left = new fabric.Polygon([
+          {x:-1.2*R,y:-0.5*R},{x:0,y:-0.15*R},{x:0,y:0.75*R},{x:-1.2*R,y:0.55*R}
+        ], {fill:c});
+        var right = new fabric.Polygon([
+          {x:1.2*R,y:-0.5*R},{x:0,y:-0.15*R},{x:0,y:0.75*R},{x:1.2*R,y:0.55*R}
+        ], {fill:c});
+        return new fabric.Group([left, right]);
+      } },
+    { id:'roundedFrame', label:'둥근 프레임', build:function(R,c){
+        return new fabric.Rect({ width:R*1.7, height:R*1.7, rx:R*0.28, ry:R*0.28, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.09) });
+      } },
+    { id:'halfCircle', label:'반원 아치', build:function(R,c){
+        var d = 'M '+(-R)+' 0 A '+R+' '+R+' 0 0 1 '+R+' 0 Z';
+        return new fabric.Path(d, {fill:c});
+      } },
+    { id:'wave', label:'물결 구분선', build:function(R,c){
+        var d = 'M '+(-1.4*R)+' 0 Q '+(-0.7*R)+' '+(-0.5*R)+' 0 0 Q '+(0.7*R)+' '+(0.5*R)+' '+(1.4*R)+' 0';
+        return new fabric.Path(d, {fill:'', stroke:c, strokeWidth:Math.max(2,R*0.08)});
+      } },
+    { id:'dotDivider', label:'점 구분선', build:function(R,c){
+        var sw = Math.max(2,R*0.06);
+        var l1 = new fabric.Line([-1.4*R,0,-0.3*R,0], {stroke:c, strokeWidth:sw});
+        var l2 = new fabric.Line([0.3*R,0,1.4*R,0], {stroke:c, strokeWidth:sw});
+        var dot = new fabric.Circle({radius:R*0.09, left:0, top:0, originX:'center', originY:'center', fill:c});
+        return new fabric.Group([l1, dot, l2]);
+      } }
+  ];
+
+  var iconCanvas = new fabric.StaticCanvas('iconRenderCanvas', { width:64, height:64 });
+  function renderShapeIcon(def){
+    iconCanvas.clear();
+    var obj = def.build(22, ICON_COLOR);
+    obj.set({ left:32, top:32, originX:'center', originY:'center' });
+    iconCanvas.add(obj);
+    iconCanvas.renderAll();
+    return iconCanvas.toDataURL({ format:'png' });
+  }
+
+  var decoGrid = $('decoGrid');
+  shapeLibrary.forEach(function(def){
+    var btn = document.createElement('button');
+    btn.className = 'deco-btn';
+    btn.type = 'button';
+    btn.title = def.label;
+    var img = document.createElement('img');
+    img.src = renderShapeIcon(def);
+    img.alt = def.label;
+    btn.appendChild(img);
+    btn.addEventListener('click', function(){
+      var obj = def.build(140, DECO_COLOR);
+      obj.set({ left: DISPLAY_W/2, top: DISPLAY_H/2, originX:'center', originY:'center' });
+      obj.data = { type:'shape', kind: (def.id === 'roundedFrame' ? 'rect' : 'deco'), shapeId: def.id };
+      canvas.add(obj);
+      canvas.setActiveObject(obj);
+      keepBackgroundAtBottom();
+      canvas.requestRenderAll();
+      updateThumbnails();
+    });
+    decoGrid.appendChild(btn);
+  });
+
+  // ---------- Safe guide toggle ----------
+  var guideOn = false;
+  $('guideToggle').addEventListener('click', function(){
+    guideOn = !guideOn;
+    $('guideSwitch').classList.toggle('on', guideOn);
+    $('safeGuide').classList.toggle('show', guideOn);
+  });
+
+  // ---------- Selection -> property panel ----------
+  var panels = { empty: $('emptyState'), text: $('textPanel'), shape: $('shapePanel'), bg: $('bgPanel'), group: $('groupPanel') };
+  function showPanel(name){
+    Object.keys(panels).forEach(function(k){ panels[k].style.display = (k===name)?'block':'none'; });
+  }
+
+  canvas.on('selection:created', onSelect);
+  canvas.on('selection:updated', onSelect);
+  canvas.on('selection:cleared', function(){ showPanel('empty'); });
+
+  function onSelect(e){
+    var obj = canvas.getActiveObject();
+    if(!obj){ showPanel('empty'); return; }
+
+    // Multiple objects dragged-selected together -> offer to group them
+    if(obj.type === 'activeSelection'){
+      showPanel('group');
+      $('groupMultiActions').style.display = 'block';
+      $('groupUngroupActions').style.display = 'none';
+      return;
+    }
+    // A user-made group -> offer to ungroup
+    if(obj.type === 'group' && obj.data && obj.data.type === 'userGroup'){
+      showPanel('group');
+      $('groupMultiActions').style.display = 'none';
+      $('groupUngroupActions').style.display = 'block';
+      return;
+    }
+
+    var t = obj.data && obj.data.type;
+    if(t === 'text'){
+      showPanel('text');
+      fillTextPanel(obj);
+    } else if(t === 'shape'){
+      showPanel('shape');
+      fillShapePanel(obj);
+      lastShapeRef = obj;
+    } else if(t === 'background'){
+      showPanel('bg');
+      var pct = Math.round((obj.scaleX / bgBaseScale) * 100);
+      $('bgZoom2').value = pct;
+      $('bgZoomVal2').textContent = pct + '%';
+    } else {
+      showPanel('empty');
+    }
+  }
+
+  // ---------- Group / ungroup ----------
+  $('btnGroupNow').addEventListener('click', function(){
+    var active = canvas.getActiveObject();
+    if(!active || active.type !== 'activeSelection') return;
+    var grp = active.toGroup();
+    grp.data = { type:'userGroup' };
+    canvas.requestRenderAll();
+    onSelect();
+    updateThumbnails();
+  });
+  $('btnUngroupNow').addEventListener('click', function(){
+    var active = canvas.getActiveObject();
+    if(!active || active.type !== 'group') return;
+    active.toActiveSelection();
+    canvas.requestRenderAll();
+    showPanel('empty');
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+  $('btnDeleteGroup').addEventListener('click', function(){
+    var active = canvas.getActiveObject();
+    if(!active) return;
+    canvas.remove(active);
+    canvas.discardActiveObject();
+    showPanel('empty');
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+
+  // ---------- Text property bindings ----------
+  function fillTextPanel(obj){
+    $('txtContent').value = obj.text;
+    $('txtFont').value = obj.fontFamily;
+    $('txtSize').value = Math.round(obj.fontSize * MULTIPLIER);
+    $('txtSizeVal').textContent = Math.round(obj.fontSize * MULTIPLIER) + 'px';
+    $('txtLH').value = obj.lineHeight;
+    $('txtLHVal').textContent = obj.lineHeight.toFixed(2);
+    $('txtColor').value = rgbToHex(obj.fill);
+    $('txtOp').value = Math.round(obj.opacity*100);
+    $('txtOpVal').textContent = Math.round(obj.opacity*100) + '%';
+    $('txtLS').value = obj.charSpacing || 0;
+    $('txtLSVal').textContent = obj.charSpacing || 0;
+
+    document.querySelectorAll('#txtAlign button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-align') === obj.textAlign);
+    });
+    document.querySelectorAll('#txtWeight button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-weight') == String(obj.fontWeight));
+    });
+  }
+  function rgbToHex(c){
+    if(!c) return '#000000';
+    if(c[0] === '#') return c.length===7? c : '#000000';
+    return '#000000';
+  }
+  function activeText(){
+    var o = canvas.getActiveObject();
+    return (o && o.data && o.data.type==='text') ? o : null;
+  }
+  $('txtContent').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    o.set('text', this.value); canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtFont').addEventListener('change', function(){
+    var o = activeText(); if(!o) return;
+    o.set('fontFamily', this.value); canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtSize').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    var exportPx = parseInt(this.value,10);
+    $('txtSizeVal').textContent = exportPx + 'px';
+    o.set('fontSize', exportPx / MULTIPLIER);
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtLH').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    o.set('lineHeight', parseFloat(this.value));
+    $('txtLHVal').textContent = parseFloat(this.value).toFixed(2);
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtColor').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    o.set('fill', this.value); canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtOp').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    o.set('opacity', this.value/100);
+    $('txtOpVal').textContent = this.value + '%';
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('txtLS').addEventListener('input', function(){
+    var o = activeText(); if(!o) return;
+    o.set('charSpacing', parseInt(this.value,10));
+    $('txtLSVal').textContent = this.value;
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  document.querySelectorAll('#txtAlign button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var o = activeText(); if(!o) return;
+      o.set('textAlign', b.getAttribute('data-align'));
+      document.querySelectorAll('#txtAlign button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      canvas.requestRenderAll(); updateThumbnails();
+    });
+  });
+  document.querySelectorAll('#txtWeight button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var o = activeText(); if(!o) return;
+      o.set('fontWeight', parseInt(b.getAttribute('data-weight'),10));
+      document.querySelectorAll('#txtWeight button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      canvas.requestRenderAll(); updateThumbnails();
+    });
+  });
+  $('btnDeleteText').addEventListener('click', function(){
+    var o = activeText(); if(!o) return;
+    canvas.remove(o); showPanel('empty'); canvas.requestRenderAll(); updateThumbnails();
+  });
+
+  // ---------- Shape property bindings ----------
+  function fillShapePanel(obj){
+    var sampleFill = obj.fill, sampleStroke = obj.stroke, sampleStrokeW = obj.strokeWidth;
+    if(obj.type === 'group'){
+      var kids = obj.getObjects();
+      var fillKid = kids.filter(function(k){ return k.fill && k.fill !== ''; })[0];
+      var strokeKid = kids.filter(function(k){ return k.stroke; })[0];
+      sampleFill = fillKid ? fillKid.fill : '';
+      sampleStroke = strokeKid ? strokeKid.stroke : '';
+      sampleStrokeW = strokeKid ? strokeKid.strokeWidth : 0;
+    }
+    $('shpFill').value = rgbaToHexOnly(sampleFill || 'rgba(0,0,0,1)');
+    $('shpOp').value = Math.round(obj.opacity*100);
+    $('shpOpVal').textContent = Math.round(obj.opacity*100) + '%';
+    $('shpStroke').value = sampleStroke ? rgbaToHexOnly(sampleStroke) : '#000000';
+    $('shpStrokeW').value = sampleStrokeW || 0;
+    $('shpStrokeWVal').textContent = sampleStrokeW || 0;
+    var isRect = obj.data && obj.data.kind === 'rect';
+    document.getElementById('shpRadius').parentElement.style.display = isRect ? 'block' : 'none';
+    $('shpRadius').value = obj.rx || 0;
+    $('shpRadiusVal').textContent = obj.rx || 0;
+  }
+  function rgbaToHexOnly(c){
+    if(!c) return '#000000';
+    if(c[0] === '#') return c;
+    var m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if(!m) return '#000000';
+    function h(n){ var s = parseInt(n,10).toString(16); return s.length===1 ? '0'+s : s; }
+    return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+  }
+  function activeShape(){
+    var o = canvas.getActiveObject();
+    return (o && o.data && o.data.type==='shape') ? o : null;
+  }
+  function currentAlpha(obj){
+    var f = obj.fill || 'rgba(0,0,0,1)';
+    var m = String(f).match(/rgba?\([^)]+,\s*([\d.]+)\)/);
+    return m ? parseFloat(m[1]) : 1;
+  }
+  function currentAlphaOf(fillStr){
+    if(!fillStr) return 1;
+    var m = String(fillStr).match(/rgba?\([^)]+,\s*([\d.]+)\)/);
+    return m ? parseFloat(m[1]) : 1;
+  }
+  $('shpFill').addEventListener('input', function(){
+    var o = activeShape(); if(!o) return;
+    var hex = this.value;
+    var r = parseInt(hex.substr(1,2),16), g = parseInt(hex.substr(3,2),16), b = parseInt(hex.substr(5,2),16);
+    if(o.type === 'group'){
+      o.getObjects().forEach(function(c){
+        if(c.fill && c.fill !== ''){
+          var a = currentAlphaOf(c.fill);
+          c.set('fill', 'rgba('+r+','+g+','+b+','+a+')');
+        }
+      });
+      o.dirty = true;
+    } else {
+      var alpha = currentAlpha(o);
+      o.set('fill', 'rgba('+r+','+g+','+b+','+alpha+')');
+    }
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('shpOp').addEventListener('input', function(){
+    var o = activeShape(); if(!o) return;
+    o.set('opacity', this.value/100);
+    $('shpOpVal').textContent = this.value + '%';
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('shpStroke').addEventListener('input', function(){
+    var o = activeShape(); if(!o) return;
+    var hexVal = this.value;
+    if(o.type === 'group'){
+      o.getObjects().forEach(function(c){ if(c.stroke){ c.set('stroke', hexVal); } });
+      o.dirty = true;
+    } else {
+      o.set('stroke', hexVal);
+    }
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('shpStrokeW').addEventListener('input', function(){
+    var o = activeShape(); if(!o) return;
+    var w = parseInt(this.value,10);
+    if(o.type === 'group'){
+      o.getObjects().forEach(function(c){ if(c.stroke){ c.set('strokeWidth', w); } });
+      o.dirty = true;
+    } else {
+      o.set('strokeWidth', w);
+    }
+    $('shpStrokeWVal').textContent = this.value;
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('shpRadius').addEventListener('input', function(){
+    var o = activeShape(); if(!o) return;
+    o.set({ rx: parseInt(this.value,10), ry: parseInt(this.value,10) });
+    $('shpRadiusVal').textContent = this.value;
+    canvas.requestRenderAll(); updateThumbnails();
+  });
+  $('btnDeleteShape').addEventListener('click', function(){
+    var o = activeShape(); if(!o) return;
+    canvas.remove(o); showPanel('empty'); canvas.requestRenderAll(); updateThumbnails();
+  });
+
+  // ---------- Move a text box onto a shape (explicit, user-driven) ----------
+  // We remember the last shape the person selected so that, after they
+  // switch selection to a text box, "이 도형 중앙으로 이동" still knows
+  // which shape to snap the text onto. Nothing is created automatically.
+  var lastShapeRef = null;
+  $('btnMoveTextToShape').addEventListener('click', function(){
+    var textObj = activeText();
+    if(!textObj) return;
+    if(!lastShapeRef || !canvas.getObjects().includes(lastShapeRef)){
+      alert('먼저 캔버스에서 도형을 한 번 클릭해 선택한 뒤, 다시 텍스트를 선택하고 이 버튼을 눌러주세요.');
+      return;
+    }
+    var bounds = lastShapeRef.getBoundingRect(true, true);
+    textObj.set({
+      left: bounds.left + bounds.width/2,
+      top: bounds.top + bounds.height/2,
+      originX: 'center',
+      originY: 'center'
+    });
+    canvas.bringToFront(textObj);
+    textObj.setCoords();
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+
+  // ---------- Z-order ----------
+  document.querySelectorAll('[data-zorder]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var o = canvas.getActiveObject(); if(!o) return;
+      if(btn.getAttribute('data-zorder') === 'front'){ canvas.bringToFront(o); }
+      else { canvas.sendToBack(o); keepBackgroundAtBottom(); }
+      canvas.requestRenderAll(); updateThumbnails();
+    });
+  });
+
+  // ---------- Keyboard delete ----------
+  document.addEventListener('keydown', function(e){
+    if((e.key === 'Delete' || e.key === 'Backspace')){
+      var o = canvas.getActiveObject();
+      if(!o) return;
+      if(o.isEditing) return; // don't delete while typing
+      var tag = document.activeElement.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      canvas.remove(o);
+      showPanel('empty');
+      canvas.requestRenderAll();
+      updateThumbnails();
+    }
+  });
+
+  // ---------- Reset ----------
+  $('btnReset').addEventListener('click', function(){
+    if(!confirm('캔버스의 모든 요소를 삭제할까요?')) return;
+    canvas.clear();
+    canvas.backgroundColor = '#FFFFFF';
+    bgImage = null;
+    $('bgControls').classList.remove('show');
+    showPanel('empty');
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+
+  // ---------- Thumbnails ----------
+  var thumbTimer = null;
+  function updateThumbnails(){
+    clearTimeout(thumbTimer);
+    thumbTimer = setTimeout(function(){
+      // NOTE: toDataURL renders only the object layer (not the selection
+      // handles/borders), so we do NOT need to discard the active object
+      // here. Doing so was clearing the selection ~180ms after every click,
+      // which made the right-side property panel disappear right after
+      // selecting something.
+      var url = canvas.toDataURL({ format:'png', multiplier: 0.5 });
+      $('thumbLarge').src = url;
+      $('thumbSmall').src = url;
+    }, 180);
+  }
+  canvas.on('object:modified', updateThumbnails);
+  canvas.on('object:added', updateThumbnails);
+  canvas.on('object:removed', updateThumbnails);
+  canvas.on('mouse:up', updateThumbnails);
+
+  // ---------- Export (PNG / JPG / PDF) with user-chosen save location ----------
+  var SAVE_PICKER_SUPPORTED = typeof window.showSaveFilePicker === 'function';
+
+  function getExportDataURL(format, quality){
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    var m = getExportMultiplier();
+    if(format === 'jpeg'){
+      return canvas.toDataURL({ format:'jpeg', quality: quality || 0.92, multiplier: m });
+    }
+    return canvas.toDataURL({ format:'png', multiplier: m, quality: 1 });
+  }
+  function dataURLToBlob(dataURL){
+    var parts = dataURL.split(',');
+    var mimeMatch = parts[0].match(/:(.*?);/);
+    var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    var bstr = atob(parts[1]);
+    var n = bstr.length;
+    var u8 = new Uint8Array(n);
+    while(n--){ u8[n] = bstr.charCodeAt(n); }
+    return new Blob([u8], { type: mime });
+  }
+  function fallbackDownload(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+  // Saves a Blob, letting the person pick the folder/filename when the
+  // browser supports it (Chrome/Edge). Falls back to a normal download
+  // (goes to the browser's default Downloads folder) everywhere else.
+  function saveBlobWithPicker(blob, suggestedName, mimeType, extList, description){
+    if(SAVE_PICKER_SUPPORTED){
+      var opts = {
+        suggestedName: suggestedName,
+        types: [{ description: description, accept: (function(){ var o={}; o[mimeType]=extList; return o; })() }]
+      };
+      window.showSaveFilePicker(opts).then(function(handle){
+        return handle.createWritable().then(function(writable){
+          return writable.write(blob).then(function(){ return writable.close(); });
+        });
+      }).catch(function(err){
+        if(err && err.name === 'AbortError') return; // user cancelled the dialog, do nothing
+        console.warn('저장 위치 선택 창을 열지 못해 기본 다운로드로 대체합니다.', err);
+        fallbackDownload(blob, suggestedName);
+      });
+    } else {
+      fallbackDownload(blob, suggestedName);
+    }
+  }
+  function exportFilenameBase(){
+    var p = EXPORT_PRESETS[currentPresetKey];
+    var tag = (currentPresetKey === 'yupaper') ? '유페이퍼용' : '일반용';
+    return 'ebook-cover-' + tag + '-' + p.w + 'x' + p.h;
+  }
+  $('btnExportPNG').addEventListener('click', function(){
+    var blob = dataURLToBlob(getExportDataURL('png'));
+    saveBlobWithPicker(blob, exportFilenameBase() + '.png', 'image/png', ['.png'], 'PNG 이미지');
+  });
+  $('btnExportJPG').addEventListener('click', function(){
+    var blob = dataURLToBlob(getExportDataURL('jpeg', 0.92));
+    saveBlobWithPicker(blob, exportFilenameBase() + '.jpg', 'image/jpeg', ['.jpg', '.jpeg'], 'JPG 이미지');
+  });
+  $('btnExportPDF').addEventListener('click', function(){
+    var png = getExportDataURL('png');
+    var JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+    if(!JsPDFCtor){
+      alert('PDF 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+      return;
+    }
+    var p = EXPORT_PRESETS[currentPresetKey];
+    var pdf = new JsPDFCtor({ orientation:'portrait', unit:'px', format:[p.w, p.h] });
+    pdf.addImage(png, 'PNG', 0, 0, p.w, p.h);
+    var pdfBlob = pdf.output('blob');
+    saveBlobWithPicker(pdfBlob, exportFilenameBase() + '.pdf', 'application/pdf', ['.pdf'], 'PDF 문서');
+  });
+
+  // ---------- Export preset switch (일반용 / 유페이퍼용) ----------
+  function refreshPresetUI(){
+    var p = EXPORT_PRESETS[currentPresetKey];
+    $('specTag').textContent = p.w + ' × ' + p.h + ' px · RGB';
+    var meta = document.getElementById('exportSizeMeta');
+    if(meta){ meta.textContent = p.w + '×' + p.h + 'px (' + p.label + ')'; }
+    document.querySelectorAll('.preset-btn').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-preset') === currentPresetKey);
+    });
+  }
+  document.querySelectorAll('.preset-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      currentPresetKey = btn.getAttribute('data-preset');
+      refreshPresetUI();
+    });
+  });
+  refreshPresetUI();
+
+  // ---------- Init: seed with a friendly starter layout ----------
+  function seed(){
+    var titleTb = new fabric.Textbox('책 제목을 입력하세요', {
+      left: DISPLAY_W/2, top: textPresets.title.top, width: DISPLAY_W*0.8,
+      fontFamily: textPresets.title.fontFamily, fontWeight: 700,
+      fontSize: textPresets.title.fontSize / MULTIPLIER,
+      fill: '#1a1a1a', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
+    });
+    titleTb.data = { type:'text', role:'title' };
+    canvas.add(titleTb);
+
+    var authorTb = new fabric.Textbox('저자명', {
+      left: DISPLAY_W/2, top: textPresets.author.top, width: DISPLAY_W*0.8,
+      fontFamily: textPresets.author.fontFamily, fontWeight: 400,
+      fontSize: textPresets.author.fontSize / MULTIPLIER,
+      fill: '#1a1a1a', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
+    });
+    authorTb.data = { type:'text', role:'author' };
+    canvas.add(authorTb);
+
+    var pubTb = new fabric.Textbox('출판사명', {
+      left: DISPLAY_W/2, top: textPresets.publisher.top, width: DISPLAY_W*0.8,
+      fontFamily: textPresets.publisher.fontFamily, fontWeight: 400,
+      fontSize: textPresets.publisher.fontSize / MULTIPLIER,
+      fill: '#555555', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
+    });
+    pubTb.data = { type:'text', role:'publisher' };
+    canvas.add(pubTb);
+
+    canvas.requestRenderAll();
+    updateThumbnails();
+  }
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(seed);
+  } else {
+    seed();
+  }
+
+})();
+</script>
+</body>
+</html>
