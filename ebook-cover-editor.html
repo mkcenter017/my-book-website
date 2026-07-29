@@ -394,6 +394,39 @@
     background:var(--bg-panel-2);padding:2px;cursor:pointer;
   }
   input[type="color"]::-webkit-color-swatch{border-radius:3px;border:none;}
+  .recent-swatches{display:flex;gap:5px;margin-top:6px;}
+  .swatch-btn{
+    width:20px;height:20px;border-radius:50%;
+    border:1.5px solid var(--border-light);
+    cursor:pointer;padding:0;flex:none;
+    transition:transform .1s, border-color .15s;
+  }
+  .swatch-btn:hover{transform:scale(1.15);border-color:var(--accent);}
+  .swatch-empty{
+    font-size:9.5px;color:var(--text-tertiary);
+    display:flex;align-items:center;
+  }
+  .stepper-wrap{display:flex;align-items:center;gap:7px;}
+  .stepper-wrap input[type="range"]{flex:1;}
+  .stepper-btn{
+    width:24px;height:24px;flex:none;
+    border-radius:6px;
+    background:var(--bg-panel-2);
+    border:1px solid var(--border-light);
+    color:var(--text-primary);
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-family:inherit;
+    transition:background .15s, border-color .15s, transform .1s;
+  }
+  .stepper-btn:hover{background:var(--bg-panel-3);border-color:var(--accent);}
+  .stepper-btn:active{transform:scale(0.92);}
+  .history-group{display:flex;gap:4px;}
+  .history-group .btn{padding:8px 11px;font-size:14px;}
+  .history-group .btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .history-group .btn:disabled:hover{background:var(--bg-panel-2);border-color:var(--border-light);}
   .seg{
     display:flex;
     border:1px solid var(--border-light);
@@ -476,6 +509,10 @@
         </button>
       </div>
       <span class="spec-tag" id="specTag" title="크롬/엣지 브라우저에서는 다운로드 시 저장 위치를 직접 선택할 수 있어요">1600 × 2560 px · RGB</span>
+      <div class="history-group">
+        <button class="btn" id="btnUndo" title="실행 취소 (Ctrl+Z)" disabled>↶</button>
+        <button class="btn" id="btnRedo" title="다시 실행 (Ctrl+Shift+Z)" disabled>↷</button>
+      </div>
       <button class="btn" id="btnReset">초기화</button>
       <div class="export-group">
         <button class="btn btn-primary" id="btnExportPNG" title="투명 배경 지원, 최고 화질">PNG</button>
@@ -637,6 +674,7 @@
           <div>
             <label>색상</label>
             <input type="color" id="txtColor" value="#1a1a1a">
+            <div class="recent-swatches" data-target="txtColor"></div>
           </div>
           <div>
             <label>굵기</label>
@@ -679,6 +717,7 @@
         <div class="prop-group">
           <label>채우기 색상</label>
           <input type="color" id="shpFill" value="#000000">
+          <div class="recent-swatches" data-target="shpFill"></div>
         </div>
 
         <div class="prop-group">
@@ -690,6 +729,7 @@
           <div>
             <label>테두리 색상</label>
             <input type="color" id="shpStroke" value="#000000">
+            <div class="recent-swatches" data-target="shpStroke"></div>
           </div>
           <div>
             <label>테두리 두께 <span class="val" id="shpStrokeWVal">0</span></label>
@@ -857,6 +897,81 @@
   }
 
   function pxToDisplay(v){ return v / MULTIPLIER; }
+
+  // ---------- +/- stepper buttons for numeric sliders (Canva-style) ----------
+  // Wraps an existing <input type="range"> with a [-] value [+] control.
+  // Reuses the slider's own 'input' listeners by dispatching a synthetic
+  // 'input' event, so no other code needs to change.
+  function addStepper(id, step, decimals){
+    var input = $(id);
+    if(!input || input.dataset.stepperAttached) return;
+    input.dataset.stepperAttached = '1';
+    var wrap = document.createElement('div');
+    wrap.className = 'stepper-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    var minus = document.createElement('button');
+    minus.type = 'button'; minus.className = 'stepper-btn'; minus.textContent = '−';
+    var plus = document.createElement('button');
+    plus.type = 'button'; plus.className = 'stepper-btn'; plus.textContent = '+';
+    wrap.appendChild(minus);
+    wrap.appendChild(input);
+    wrap.appendChild(plus);
+    function bump(delta){
+      var min = input.min !== '' ? parseFloat(input.min) : -Infinity;
+      var max = input.max !== '' ? parseFloat(input.max) : Infinity;
+      var val = parseFloat(input.value) + delta;
+      val = Math.max(min, Math.min(max, val));
+      if(decimals != null){ val = parseFloat(val.toFixed(decimals)); }
+      input.value = val;
+      input.dispatchEvent(new Event('input', { bubbles:true }));
+    }
+    minus.addEventListener('click', function(){ bump(-step); });
+    plus.addEventListener('click', function(){ bump(step); });
+  }
+  addStepper('txtSize', 1);
+  addStepper('txtLH', 0.05, 2);
+  addStepper('txtLS', 10);
+  addStepper('txtOp', 5);
+  addStepper('shpOp', 5);
+  addStepper('shpStrokeW', 1);
+  addStepper('shpRadius', 5);
+  addStepper('bgZoom', 5);
+  addStepper('bgZoom2', 5);
+
+  // ---------- Recent colors (Canva-style: last 3 used) ----------
+  var recentColors = [];
+  function pushRecentColor(hex){
+    if(!hex) return;
+    recentColors = [hex].concat(recentColors.filter(function(c){ return c !== hex; })).slice(0, 3);
+    renderRecentSwatches();
+  }
+  function renderRecentSwatches(){
+    document.querySelectorAll('.recent-swatches').forEach(function(el){
+      el.innerHTML = '';
+      if(recentColors.length === 0){
+        var e = document.createElement('span');
+        e.className = 'swatch-empty';
+        e.textContent = '최근 사용한 색상이 여기 표시돼요';
+        el.appendChild(e);
+        return;
+      }
+      recentColors.forEach(function(hex){
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'swatch-btn';
+        b.style.background = hex;
+        b.title = hex;
+        b.addEventListener('click', function(){
+          var targetInput = $(el.getAttribute('data-target'));
+          if(!targetInput) return;
+          targetInput.value = hex;
+          targetInput.dispatchEvent(new Event('input', { bubbles:true }));
+        });
+        el.appendChild(b);
+      });
+    });
+  }
+  renderRecentSwatches();
 
   // ---------- Background image ----------
   $('fileInput').addEventListener('change', function(e){
@@ -1332,6 +1447,7 @@
     var o = activeText(); if(!o) return;
     o.set('fill', this.value); canvas.requestRenderAll(); updateThumbnails();
   });
+  $('txtColor').addEventListener('change', function(){ pushRecentColor(this.value); });
   $('txtOp').addEventListener('input', function(){
     var o = activeText(); if(!o) return;
     o.set('opacity', this.value/100);
@@ -1429,6 +1545,7 @@
     }
     canvas.requestRenderAll(); updateThumbnails();
   });
+  $('shpFill').addEventListener('change', function(){ pushRecentColor(this.value); });
   $('shpOp').addEventListener('input', function(){
     var o = activeShape(); if(!o) return;
     o.set('opacity', this.value/100);
@@ -1446,6 +1563,7 @@
     }
     canvas.requestRenderAll(); updateThumbnails();
   });
+  $('shpStroke').addEventListener('change', function(){ pushRecentColor(this.value); });
   $('shpStrokeW').addEventListener('input', function(){
     var o = activeShape(); if(!o) return;
     var w = parseInt(this.value,10);
@@ -1504,14 +1622,28 @@
     });
   });
 
-  // ---------- Keyboard delete ----------
+  // ---------- Keyboard shortcuts: delete, undo, redo ----------
   document.addEventListener('keydown', function(e){
-    if((e.key === 'Delete' || e.key === 'Backspace')){
+    var tag = document.activeElement.tagName;
+    var typingInField = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+
+    // Undo / redo (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y)
+    if((e.ctrlKey || e.metaKey) && !typingInField){
+      var k = e.key.toLowerCase();
+      if(k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); return; }
+      if((k === 'z' && e.shiftKey) || k === 'y'){ e.preventDefault(); redo(); return; }
+    }
+
+    if(e.key === 'Delete' || e.key === 'Backspace'){
+      if(typingInField) return; // let normal form/text typing behave normally
       var o = canvas.getActiveObject();
       if(!o) return;
-      if(o.isEditing) return; // don't delete while typing
-      var tag = document.activeElement.tagName;
-      if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if(o.isEditing) return; // don't delete while typing inside a text box
+      // IMPORTANT: without this, Backspace's browser-default "go back a
+      // page" action fires right after the delete, which looked like
+      // "the wrong object got deleted" (it was actually navigating the
+      // whole page back to an earlier state).
+      e.preventDefault();
       canvas.remove(o);
       showPanel('empty');
       canvas.requestRenderAll();
@@ -1530,6 +1662,63 @@
     canvas.requestRenderAll();
     updateThumbnails();
   });
+
+  // ---------- Smart alignment guides (Canva-style "자") ----------
+  // While dragging an object, snaps it to the canvas center, the 5%
+  // safe-area lines, and the edges/centers of other objects, drawing a
+  // thin dashed guide line wherever a snap happens.
+  var SNAP_THRESHOLD = 7;
+  var guideLines = [];
+  function clearGuides(){
+    guideLines.forEach(function(l){ canvas.remove(l); });
+    guideLines = [];
+  }
+  function addGuideLine(orientation, pos){
+    var line = (orientation === 'v')
+      ? new fabric.Line([pos, 0, pos, DISPLAY_H], { stroke:'#C1432E', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false })
+      : new fabric.Line([0, pos, DISPLAY_W, pos], { stroke:'#C1432E', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false });
+    line.data = { isGuide:true };
+    canvas.add(line);
+    canvas.bringToFront(line);
+    guideLines.push(line);
+  }
+  function closestSnap(candidates, targets){
+    var best = null;
+    candidates.forEach(function(val){
+      targets.forEach(function(t){
+        var diff = Math.abs(val - t);
+        if(diff < SNAP_THRESHOLD && (!best || diff < best.diff)){
+          best = { diff:diff, delta:(t - val), pos:t };
+        }
+      });
+    });
+    return best;
+  }
+  canvas.on('object:moving', function(opt){
+    var obj = opt.target;
+    if(!obj || (obj.data && obj.data.isGuide)) return;
+    clearGuides();
+
+    var b = obj.getBoundingRect(true);
+    var left = b.left, right = b.left + b.width, centerX = b.left + b.width/2;
+    var top = b.top, bottom = b.top + b.height, centerY = b.top + b.height/2;
+
+    var vTargets = [DISPLAY_W/2, DISPLAY_W*0.05, DISPLAY_W*0.95, 0, DISPLAY_W];
+    var hTargets = [DISPLAY_H/2, DISPLAY_H*0.05, DISPLAY_H*0.95, 0, DISPLAY_H];
+    canvas.getObjects().forEach(function(o){
+      if(o === obj || (o.data && o.data.isGuide)) return;
+      var ob = o.getBoundingRect(true);
+      vTargets.push(ob.left, ob.left + ob.width/2, ob.left + ob.width);
+      hTargets.push(ob.top, ob.top + ob.height/2, ob.top + ob.height);
+    });
+
+    var xSnap = closestSnap([left, centerX, right], vTargets);
+    var ySnap = closestSnap([top, centerY, bottom], hTargets);
+    if(xSnap){ obj.left += xSnap.delta; addGuideLine('v', xSnap.pos); }
+    if(ySnap){ obj.top += ySnap.delta; addGuideLine('h', ySnap.pos); }
+    obj.setCoords();
+  });
+  canvas.on('mouse:up', clearGuides);
 
   // ---------- Thumbnails ----------
   var thumbTimer = null;
@@ -1551,10 +1740,70 @@
   canvas.on('object:removed', updateThumbnails);
   canvas.on('mouse:up', updateThumbnails);
 
+  // ---------- Undo / Redo history ----------
+  var historyStack = [];
+  var historyIndex = -1;
+  var isRestoringHistory = false;
+  var HISTORY_LIMIT = 60;
+
+  function updateUndoRedoButtons(){
+    $('btnUndo').disabled = historyIndex <= 0;
+    $('btnRedo').disabled = historyIndex >= historyStack.length - 1;
+  }
+  function pushHistory(){
+    if(isRestoringHistory) return;
+    var json = JSON.stringify(canvas.toJSON(['data']));
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    historyStack.push(json);
+    if(historyStack.length > HISTORY_LIMIT){ historyStack.shift(); }
+    historyIndex = historyStack.length - 1;
+    updateUndoRedoButtons();
+  }
+  function restoreHistory(json){
+    isRestoringHistory = true;
+    canvas.loadFromJSON(json, function(){
+      // Reconnect the bgImage reference to the newly-loaded object so
+      // background zoom/center controls keep working after undo/redo.
+      bgImage = null;
+      canvas.getObjects().forEach(function(o){
+        if(o.data && o.data.type === 'background'){ bgImage = o; }
+      });
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+      showPanel('empty');
+      isRestoringHistory = false;
+      updateThumbnails();
+      updateUndoRedoButtons();
+    });
+  }
+  function undo(){
+    if(historyIndex <= 0) return;
+    historyIndex--;
+    restoreHistory(historyStack[historyIndex]);
+  }
+  function redo(){
+    if(historyIndex >= historyStack.length - 1) return;
+    historyIndex++;
+    restoreHistory(historyStack[historyIndex]);
+  }
+  canvas.on('object:added', function(e){
+    if(e.target && e.target.data && e.target.data.isGuide) return;
+    pushHistory();
+  });
+  canvas.on('object:removed', function(e){
+    if(e.target && e.target.data && e.target.data.isGuide) return;
+    pushHistory();
+  });
+  canvas.on('object:modified', pushHistory);
+  canvas.on('text:editing:exited', pushHistory);
+  $('btnUndo').addEventListener('click', undo);
+  $('btnRedo').addEventListener('click', redo);
+
   // ---------- Export (PNG / JPG / PDF) with user-chosen save location ----------
   var SAVE_PICKER_SUPPORTED = typeof window.showSaveFilePicker === 'function';
 
   function getExportDataURL(format, quality){
+    clearGuides();
     canvas.discardActiveObject();
     canvas.requestRenderAll();
     var m = getExportMultiplier();
@@ -1652,6 +1901,7 @@
 
   // ---------- Init: seed with a friendly starter layout ----------
   function seed(){
+    isRestoringHistory = true; // don't spam 3 separate history entries for the starter layout
     var titleTb = new fabric.Textbox('책 제목을 입력하세요', {
       left: DISPLAY_W/2, top: textPresets.title.top, width: DISPLAY_W*0.8,
       fontFamily: textPresets.title.fontFamily, fontWeight: 700,
@@ -1681,6 +1931,9 @@
 
     canvas.requestRenderAll();
     updateThumbnails();
+
+    isRestoringHistory = false;
+    pushHistory(); // establish the baseline state for undo/redo
   }
 
   if(document.fonts && document.fonts.ready){
