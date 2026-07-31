@@ -11,18 +11,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
-    --bg-app:#15161A;
-    --bg-panel:#1D1F24;
-    --bg-panel-2:#24262C;
-    --bg-panel-3:#2B2D34;
-    --border:#2E3038;
-    --border-light:#3A3D46;
+    --bg-app:#1C1E24;
+    --bg-panel:#24262D;
+    --bg-panel-2:#2C2E37;
+    --bg-panel-3:#353842;
+    --border:#383B45;
+    --border-light:#4A4D59;
     --text-primary:#EDEBE6;
-    --text-secondary:#9A9CA3;
-    --text-tertiary:#6B6D75;
-    --accent:#C1432E;
-    --accent-hover:#D85940;
-    --accent-soft:rgba(193,67,46,0.14);
+    --text-secondary:#A7A9B1;
+    --text-tertiary:#797B85;
+    --accent:#3B7DF0;
+    --accent-hover:#5C93F5;
+    --accent-soft:rgba(59,125,240,0.16);
     --canvas-mat:#EFEAE0;
     --ok:#4C9A6A;
     --radius:6px;
@@ -51,6 +51,8 @@
     padding:0 20px;
     height:56px;
     min-height:56px;
+    flex:none;
+    overflow:hidden;
     border-bottom:1px solid var(--border);
     background:var(--bg-panel);
   }
@@ -58,10 +60,12 @@
     display:flex;
     align-items:baseline;
     gap:10px;
+    min-width:0;
+    flex:none;
   }
   .brand .mark{
     width:22px;height:28px;
-    background:linear-gradient(160deg,var(--accent),#8C2E1F);
+    background:linear-gradient(160deg,var(--accent),#1E4FA8);
     border-radius:2px 5px 5px 2px;
     position:relative;
     flex:none;
@@ -77,11 +81,13 @@
     font-size:17px;
     letter-spacing:0.02em;
     margin:0;
+    white-space:nowrap;
   }
   .brand span.sub{
     font-size:11px;
     color:var(--text-tertiary);
     font-weight:400;
+    white-space:nowrap;
   }
   .header-right{display:flex;align-items:center;gap:10px;}
   .preset-toggle{
@@ -194,6 +200,7 @@
     flex:1;
     display:flex;
     min-height:0;
+    overflow-x:auto;
   }
 
   /* ---------- Left toolbar ---------- */
@@ -207,19 +214,21 @@
   }
   .tool-section{margin-bottom:22px;}
   .tool-section h3{
-    font-size:10.5px;
-    text-transform:uppercase;
-    letter-spacing:0.09em;
+    font-size:12.5px;
     color:var(--text-tertiary);
-    font-weight:700;
+    font-weight:600;
     margin:0 0 10px 2px;
   }
   .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .tool-grid .btn{padding:10px 8px;font-size:12px;}
   .upload-box{
-    border:1.5px dashed var(--border-light);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    border:1px solid var(--border-light);
+    background:var(--bg-panel-2);
     border-radius:var(--radius);
-    padding:16px 10px;
+    padding:18px 10px;
     text-align:center;
     cursor:pointer;
     transition:border-color .15s, background .15s;
@@ -227,7 +236,17 @@
     font-size:12px;
   }
   .upload-box:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--text-primary);}
-  .upload-box .icon{font-size:20px;display:block;margin-bottom:6px;}
+  .upload-box .icon{
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:38px;height:38px;
+    margin:0 auto 8px;
+    background:var(--bg-panel-3);
+    border:1px solid var(--border-light);
+    border-radius:50%;
+  }
   .bg-controls{margin-top:10px;display:none;}
   .bg-controls.show{display:block;}
   .field-row{margin-bottom:10px;}
@@ -274,7 +293,7 @@
     border-radius:var(--radius);
     padding:9px 10px;
   }
-  .tip-badge b{color:#F0A08F;}
+  .tip-badge b{color:#8FB7F5;}
 
   /* ---------- Center canvas ---------- */
   .canvas-area{
@@ -283,7 +302,7 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    min-width:0;
+    min-width:260px;
     overflow:auto;
     background:
       radial-gradient(ellipse at 50% 0%, #1B1C21 0%, #101115 70%);
@@ -326,7 +345,7 @@
     content:'안전 여백 5%';
     position:absolute;
     top:-20px;left:0;
-    font-size:10px;
+    font-size:11px;
     color:var(--accent);
     font-family:'Noto Sans KR',sans-serif;
     letter-spacing:0.02em;
@@ -350,11 +369,9 @@
     padding:16px 16px 40px;
   }
   .panel-right h3{
-    font-size:10.5px;
-    text-transform:uppercase;
-    letter-spacing:0.09em;
+    font-size:12.5px;
     color:var(--text-tertiary);
-    font-weight:700;
+    font-weight:600;
     margin:0 0 12px 2px;
   }
   .empty-state{
@@ -458,7 +475,7 @@
     display:flex;justify-content:space-between;align-items:center;
     margin-bottom:10px;
   }
-  .thumb-title span{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-tertiary);font-weight:700;}
+  .thumb-title span{font-size:12px;color:var(--text-tertiary);font-weight:600;}
   .thumb-shelf{
     background:#0F1013;
     border:1px solid var(--border);
@@ -550,19 +567,12 @@
         <h3>텍스트 추가</h3>
         <div class="tool-grid">
           <button class="btn" data-add-text="title">제목</button>
-          <button class="btn" data-add-text="subtitle">부제</button>
-          <button class="btn" data-add-text="author">저자명</button>
-          <button class="btn" data-add-text="publisher">출판사명</button>
         </div>
       </div>
 
       <div class="tool-section">
         <h3>도형 &amp; 오버레이</h3>
         <div class="tool-grid">
-          <button class="btn" data-add-shape="rect">사각형</button>
-          <button class="btn" data-add-shape="circle">원</button>
-        </div>
-        <div class="tool-grid" style="margin-top:8px;">
           <button class="btn" style="grid-column:1/3;" data-add-shape="overlay">반투명 가독성 오버레이</button>
         </div>
         <p class="hint">오버레이는 배경이 복잡하거나 어두울 때 글자 가독성을 높이는 용도입니다. 크기·위치·투명도를 자유롭게 조절하세요.</p>
@@ -697,6 +707,11 @@
 
         <div class="divider"></div>
         <div class="panel-actions">
+          <button class="btn btn-sm btn-block btn-primary" id="btnCenterText">＋ 좌우 중앙 정렬</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="panel-actions">
           <button class="btn btn-sm btn-block btn-primary" id="btnMoveTextToShape">▣ 이 도형 중앙으로 이동</button>
         </div>
         <p class="hint" id="moveTargetHint">먼저 캔버스에서 도형을 한 번 선택해두면, 이 버튼을 눌렀을 때 그 도형 정중앙으로 텍스트가 이동합니다.</p>
@@ -824,6 +839,17 @@
     backgroundColor: '#FFFFFF',
     preserveObjectStacking: true
   });
+  // Fonts / sidebar content can still be loading when the canvas is first
+  // created, which can shift its on-page position after fabric has already
+  // cached that position for mouse-to-canvas coordinate mapping. If left
+  // stale, the very first drag (typically on the pre-loaded title text) can
+  // be off by a few pixels, which is enough to miss the center-snap check
+  // even though the object visually looks centered. Recomputing it after
+  // load/resize keeps drag math accurate for every object, including the
+  // ones that were already on the canvas before the user touched anything.
+  function refreshCanvasOffset(){ canvas.calcOffset(); }
+  window.addEventListener('load', refreshCanvasOffset);
+  window.addEventListener('resize', refreshCanvasOffset);
 
   var bgImage = null;
   var bgBaseScale = 1;
@@ -879,14 +905,60 @@
     }
   });
 
+  // Text boxes: show every handle, like a shape, and make every one of
+  // them resize the box's width/height directly (never scaleX/scaleY),
+  // so the font size never changes no matter which handle is dragged.
+  //   ml / mr        → width only
+  //   mt / mb        → height only
+  //   tl/tr/bl/br    → width + height together
+  function textboxChangeWidthOnly(eventData, transform, x, y){
+    return fabric.controlsUtils.changeWidth(eventData, transform, x, y);
+  }
+  function textboxChangeHeightOnly(eventData, transform, x, y){
+    var target = transform.target,
+        localPoint = fabric.controlsUtils.getLocalPoint(transform, transform.originX, transform.originY, x, y),
+        strokePadding = target.strokeWidth / (target.strokeUniform ? target.scaleY : 1),
+        oldHeight = target.height,
+        newHeight = Math.abs(localPoint.y / target.scaleY) - strokePadding;
+    target.set('height', Math.max(newHeight, 0));
+    return oldHeight !== newHeight;
+  }
+  var widthWrapped = fabric.controlsUtils.wrapWithFixedAnchor(textboxChangeWidthOnly);
+  var heightWrapped = fabric.controlsUtils.wrapWithFixedAnchor(textboxChangeHeightOnly);
+  function sizeWrapped(eventData, transform, x, y){
+    var a = widthWrapped(eventData, transform, x, y);
+    var b = heightWrapped(eventData, transform, x, y);
+    return a || b;
+  }
+  var textboxCustomControls = {};
+  ['tl','tr','bl','br','mt','mb'].forEach(function(key){
+    var base = fabric.Textbox.prototype.controls[key];
+    var isCorner = ['tl','tr','bl','br'].indexOf(key) !== -1;
+    textboxCustomControls[key] = new fabric.Control({
+      x: base.x, y: base.y, cursorStyleHandler: base.cursorStyleHandler,
+      actionName: 'resizing',
+      actionHandler: isCorner ? sizeWrapped : heightWrapped
+    });
+  });
+  fabric.Textbox.prototype.controls = fabric.util.object.extend(
+    fabric.util.object.clone(fabric.Textbox.prototype.controls),
+    textboxCustomControls
+  );
+  fabric.Textbox.prototype.controls.deleteControl = DELETE_CTRL; // re-attach after rebuilding the controls object above
+
+  fabric.Textbox.prototype.setControlsVisibility({
+    tl:true, tr:true, bl:true, br:true, mt:true, mb:true,
+    ml:true, mr:true, mtr:true
+  });
+
   // Bigger, easier-to-grab resize handles for every object (text & shapes
   // already support drag-resize by default in Fabric; this just makes the
   // handles easier to see and click).
-  fabric.Object.prototype.cornerColor = '#C1432E';
+  fabric.Object.prototype.cornerColor = '#3B7DF0';
   fabric.Object.prototype.cornerStrokeColor = '#ffffff';
   fabric.Object.prototype.cornerSize = 13;
   fabric.Object.prototype.transparentCorners = false;
-  fabric.Object.prototype.borderColor = '#C1432E';
+  fabric.Object.prototype.borderColor = '#3B7DF0';
   fabric.Object.prototype.cornerStyle = 'circle';
   fabric.Object.prototype.padding = 2;
 
@@ -1049,10 +1121,7 @@
 
   // ---------- Text ----------
   var textPresets = {
-    title:      { text:'책 제목을 입력하세요', fontSize:88, fontFamily:"'Noto Serif KR', serif", fontWeight:700, top: DISPLAY_H*0.36, fill:'#1a1a1a' },
-    subtitle:   { text:'부제를 입력하세요',     fontSize:38, fontFamily:"'Noto Sans KR', sans-serif", fontWeight:400, top: DISPLAY_H*0.50, fill:'#333333' },
-    author:     { text:'저자명',                fontSize:34, fontFamily:"'Noto Serif KR', serif",   fontWeight:400, top: DISPLAY_H*0.80, fill:'#1a1a1a' },
-    publisher:  { text:'출판사명',              fontSize:24, fontFamily:"'Noto Sans KR', sans-serif", fontWeight:400, top: DISPLAY_H*0.90, fill:'#555555' }
+    title: { text:'텍스트를 입력하세요', fontSize:60, fontFamily:"'Noto Serif KR', serif", fontWeight:700, top: DISPLAY_H*0.5, fill:'#1a1a1a' }
   };
 
   document.querySelectorAll('[data-add-text]').forEach(function(btn){
@@ -1587,6 +1656,18 @@
     canvas.remove(o); showPanel('empty'); canvas.requestRenderAll(); updateThumbnails();
   });
 
+  // ---------- Center a text box horizontally on the page ----------
+  // Only left-right position changes; the text box stays at whatever
+  // height (top) it's currently at.
+  $('btnCenterText').addEventListener('click', function(){
+    var textObj = activeText();
+    if(!textObj) return;
+    textObj.set({ left: DISPLAY_W/2 });
+    textObj.setCoords();
+    canvas.requestRenderAll();
+    updateThumbnails();
+  });
+
   // ---------- Move a text box onto a shape (explicit, user-driven) ----------
   // We remember the last shape the person selected so that, after they
   // switch selection to a text box, "이 도형 중앙으로 이동" still knows
@@ -1675,8 +1756,8 @@
   }
   function addGuideLine(orientation, pos){
     var line = (orientation === 'v')
-      ? new fabric.Line([pos, 0, pos, DISPLAY_H], { stroke:'#C1432E', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false })
-      : new fabric.Line([0, pos, DISPLAY_W, pos], { stroke:'#C1432E', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false });
+      ? new fabric.Line([pos, 0, pos, DISPLAY_H], { stroke:'#3B7DF0', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false })
+      : new fabric.Line([0, pos, DISPLAY_W, pos], { stroke:'#3B7DF0', strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false });
     line.data = { isGuide:true };
     canvas.add(line);
     canvas.bringToFront(line);
@@ -1699,7 +1780,7 @@
     if(!obj || (obj.data && obj.data.isGuide)) return;
     clearGuides();
 
-    var b = obj.getBoundingRect(true);
+    var b = obj.getBoundingRect(true, true); // 2nd arg forces a live recalculation instead of using stale cached coords
     var left = b.left, right = b.left + b.width, centerX = b.left + b.width/2;
     var top = b.top, bottom = b.top + b.height, centerY = b.top + b.height/2;
 
@@ -1707,7 +1788,7 @@
     var hTargets = [DISPLAY_H/2, DISPLAY_H*0.05, DISPLAY_H*0.95, 0, DISPLAY_H];
     canvas.getObjects().forEach(function(o){
       if(o === obj || (o.data && o.data.isGuide)) return;
-      var ob = o.getBoundingRect(true);
+      var ob = o.getBoundingRect(true, true); // same fix: always use each object's current live position
       vTargets.push(ob.left, ob.left + ob.width/2, ob.left + ob.width);
       hTargets.push(ob.top, ob.top + ob.height/2, ob.top + ob.height);
     });
@@ -1899,50 +1980,26 @@
   });
   refreshPresetUI();
 
-  // ---------- Init: seed with a friendly starter layout ----------
+  // ---------- Init: start with a blank canvas ----------
+  // Text boxes are no longer auto-created. The user adds title/subtitle/
+  // author/publisher text only by clicking the buttons in the text panel.
   function seed(){
-    isRestoringHistory = true; // don't spam 3 separate history entries for the starter layout
-    var titleTb = new fabric.Textbox('책 제목을 입력하세요', {
-      left: DISPLAY_W/2, top: textPresets.title.top, width: DISPLAY_W*0.8,
-      fontFamily: textPresets.title.fontFamily, fontWeight: 700,
-      fontSize: textPresets.title.fontSize / MULTIPLIER,
-      fill: '#1a1a1a', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
-    });
-    titleTb.data = { type:'text', role:'title' };
-    canvas.add(titleTb);
-
-    var authorTb = new fabric.Textbox('저자명', {
-      left: DISPLAY_W/2, top: textPresets.author.top, width: DISPLAY_W*0.8,
-      fontFamily: textPresets.author.fontFamily, fontWeight: 400,
-      fontSize: textPresets.author.fontSize / MULTIPLIER,
-      fill: '#1a1a1a', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
-    });
-    authorTb.data = { type:'text', role:'author' };
-    canvas.add(authorTb);
-
-    var pubTb = new fabric.Textbox('출판사명', {
-      left: DISPLAY_W/2, top: textPresets.publisher.top, width: DISPLAY_W*0.8,
-      fontFamily: textPresets.publisher.fontFamily, fontWeight: 400,
-      fontSize: textPresets.publisher.fontSize / MULTIPLIER,
-      fill: '#555555', textAlign:'center', originX:'center', originY:'center', lineHeight:1.15
-    });
-    pubTb.data = { type:'text', role:'publisher' };
-    canvas.add(pubTb);
-
+    isRestoringHistory = true;
     canvas.requestRenderAll();
     updateThumbnails();
-
     isRestoringHistory = false;
-    pushHistory(); // establish the baseline state for undo/redo
+    pushHistory(); // establish an empty baseline state for undo/redo
   }
 
   if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(seed);
+    document.fonts.ready.then(function(){ refreshCanvasOffset(); seed(); });
   } else {
     seed();
   }
+  refreshCanvasOffset();
 
 })();
 </script>
+<div style="position:fixed;bottom:4px;right:6px;font-size:10px;color:#888;z-index:9999;pointer-events:none;">build: upload-box-display-fix-v9</div>
 </body>
 </html>
