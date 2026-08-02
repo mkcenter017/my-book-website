@@ -411,6 +411,11 @@
     background:var(--bg-panel-2);padding:2px;cursor:pointer;
   }
   input[type="color"]::-webkit-color-swatch{border-radius:3px;border:none;}
+  .color-field{position:relative;}
+  .color-field-overlay{
+    position:absolute;inset:0;background:transparent;border:none;padding:0;margin:0;
+    cursor:pointer;
+  }
   .recent-swatches{display:flex;gap:5px;margin-top:6px;}
   .swatch-btn{
     width:20px;height:20px;border-radius:50%;
@@ -423,7 +428,60 @@
     font-size:9.5px;color:var(--text-tertiary);
     display:flex;align-items:center;
   }
+
+  /* ---------- Precise color popover ---------- */
+  .color-popover{
+    position:fixed;
+    z-index:10000;
+    width:236px;
+    background:var(--bg-panel-3);
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    padding:14px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.45);
+    display:none;
+  }
+  .color-popover.show{display:block;}
+  .color-popover .hex-wheel-wrap{
+    position:relative;width:204px;height:232px;margin:0 auto;
+  }
+  .color-popover .hex-cell{
+    width:24px;height:26px;
+    clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    border:none;padding:0;cursor:pointer;
+    box-shadow:0 0 0 0.5px rgba(0,0,0,0.25) inset;
+  }
+  .color-popover .hex-wheel-wrap .hex-cell{
+    position:absolute;transform:translate(-50%,-50%);transition:transform .1s;
+  }
+  .color-popover .hex-wheel-wrap .hex-cell:hover{transform:translate(-50%,-50%) scale(1.18);z-index:2;}
+  .color-popover .hex-cell.selected{outline:2px solid #fff;outline-offset:-3px;z-index:3;}
+  .color-popover .hex-gray-row{display:flex;justify-content:center;gap:3px;margin-top:8px;}
+  .color-popover .hex-gray-row .hex-cell{transition:transform .1s;}
+  .color-popover .hex-gray-row .hex-cell:hover{transform:scale(1.18);}
+  .color-popover .popover-row{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  .color-popover input.popover-hex{
+    flex:1;min-width:0;font-family:'SF Mono',Consolas,monospace;text-transform:uppercase;text-align:center;
+  }
+  .color-popover .popover-eyedrop{
+    width:32px;height:32px;flex:none;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:7px;background:var(--bg-panel-2);border:1px solid var(--border-light);cursor:pointer;
+  }
+  .color-popover .popover-eyedrop:hover{border-color:var(--accent);color:var(--text-primary);}
+  .color-popover .compare-row{gap:10px;}
+  .color-popover .compare-swatch{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+  }
+  .color-popover .compare-swatch span{font-size:10.5px;color:var(--text-tertiary);}
+  .color-popover .popover-swatch-fill{
+    width:100%;height:30px;border-radius:7px;border:1px solid var(--border-light);
+  }
+  .color-popover .popover-actions{margin-top:12px;display:flex;gap:8px;}
+  .color-popover .popover-actions .btn{flex:1;}
   .stepper-wrap{display:flex;align-items:center;gap:7px;}
+  .inline-row{display:flex;gap:8px;align-items:center;margin-top:0;}
+  .inline-row input[type="text"]{flex:1;min-width:0;}
   .stepper-wrap input[type="range"]{flex:1;}
   .stepper-btn{
     width:24px;height:24px;flex:none;
@@ -508,6 +566,30 @@
 </head>
 <body>
 <canvas id="iconRenderCanvas" width="64" height="64" style="display:none;"></canvas>
+
+<div id="colorPopover" class="color-popover">
+  <div class="hex-wheel-wrap" id="hexWheelWrap"></div>
+  <div class="hex-gray-row" id="hexGrayRow"></div>
+  <div class="popover-row">
+    <input type="text" id="popoverHex" class="popover-hex" maxlength="7" value="#000000">
+    <button type="button" id="popoverEyedrop" class="popover-eyedrop" title="화면에서 색 추출">💧</button>
+  </div>
+  <div class="popover-row compare-row">
+    <div class="compare-swatch">
+      <div id="popoverSwatchNew" class="popover-swatch-fill"></div>
+      <span>새 색</span>
+    </div>
+    <div class="compare-swatch">
+      <div id="popoverSwatchOld" class="popover-swatch-fill"></div>
+      <span>현재 색</span>
+    </div>
+  </div>
+  <div class="popover-actions">
+    <button type="button" class="btn btn-sm" id="popoverCancel">취소</button>
+    <button type="button" class="btn btn-sm btn-primary" id="popoverDone">확인</button>
+  </div>
+</div>
+
 <div id="app">
 
   <header>
@@ -582,7 +664,7 @@
       </div>
 
       <div class="tool-section">
-        <h3>장식 도형 (약 30종)</h3>
+        <h3>장식 도형 (약 40종)</h3>
         <div class="deco-grid" id="decoGrid"></div>
         <p class="hint">클릭하면 캔버스 중앙에 추가됩니다. 추가 후 우측 패널에서 색상·투명도·테두리를 조절하세요. 아이콘에 마우스를 올리면 이름이 표시됩니다.</p>
         <div class="tip-badge">
@@ -683,7 +765,10 @@
         <div class="row2 prop-group">
           <div>
             <label>색상</label>
-            <input type="color" id="txtColor" value="#1a1a1a">
+            <div class="color-field">
+              <input type="color" id="txtColor" value="#1a1a1a" tabindex="-1">
+              <button type="button" class="color-field-overlay" data-for="txtColor" aria-label="색상 선택"></button>
+            </div>
             <div class="recent-swatches" data-target="txtColor"></div>
           </div>
           <div>
@@ -731,7 +816,10 @@
 
         <div class="prop-group">
           <label>채우기 색상</label>
-          <input type="color" id="shpFill" value="#000000">
+          <div class="color-field">
+            <input type="color" id="shpFill" value="#000000" tabindex="-1">
+            <button type="button" class="color-field-overlay" data-for="shpFill" aria-label="색상 선택"></button>
+          </div>
           <div class="recent-swatches" data-target="shpFill"></div>
         </div>
 
@@ -743,7 +831,10 @@
         <div class="row2 prop-group">
           <div>
             <label>테두리 색상</label>
-            <input type="color" id="shpStroke" value="#000000">
+            <div class="color-field">
+              <input type="color" id="shpStroke" value="#000000" tabindex="-1">
+              <button type="button" class="color-field-overlay" data-for="shpStroke" aria-label="색상 선택"></button>
+            </div>
             <div class="recent-swatches" data-target="shpStroke"></div>
           </div>
           <div>
@@ -757,7 +848,15 @@
           <input type="range" id="shpRadius" min="0" max="200" value="0">
         </div>
 
-        <p class="hint">텍스트를 도형 안으로 넣으려면: 이 도형을 먼저 선택(방금 하셨습니다) → 왼쪽에서 텍스트를 추가하거나 기존 텍스트를 선택 → 텍스트 속성 패널의 "이 도형 중앙으로 이동" 버튼을 누르세요.</p>
+        <div class="divider"></div>
+        <div class="prop-group">
+          <label>도형 안에 텍스트 넣기</label>
+          <div class="inline-row">
+            <input type="text" id="shapeTextInput" placeholder="여기에 텍스트 입력" maxlength="60">
+            <button type="button" class="btn btn-sm" id="btnAddTextToShape">추가</button>
+          </div>
+          <p class="hint">입력하고 "추가"를 누르면 이 도형 정중앙에 텍스트가 바로 생겨요. 이미 만들어둔 텍스트를 이 도형으로 옮기고 싶다면, 텍스트를 선택한 뒤 텍스트 속성 패널의 "이 도형 중앙으로 이동" 버튼을 쓰세요.</p>
+        </div>
 
         <div class="divider"></div>
         <div class="panel-actions">
@@ -1010,7 +1109,211 @@
   addStepper('bgZoom', 5);
   addStepper('bgZoom2', 5);
 
-  // ---------- Recent colors (Canva-style: last 3 used) ----------
+  // ---------- Precise color popover (circular wheel style) ----------
+  // Native <input type="color"> opens the OS/browser's own picker, which on
+  // most platforms is tiny and imprecise. This builds a much bigger,
+  // in-page picker (hue/saturation wheel + brightness bar + hex field +
+  // eyedropper + new/current comparison swatches, similar to the classic
+  // Windows color-wheel dialog) and wires it to whichever
+  // <input type="color"> was clicked, so all the existing color logic
+  // elsewhere in the app keeps working unchanged.
+  function hsvToRgb(h, s, v){
+    s/=100; v/=100;
+    var c = v*s, x = c*(1-Math.abs((h/60)%2-1)), m = v-c, r,g,b;
+    if(h<60){r=c;g=x;b=0;} else if(h<120){r=x;g=c;b=0;} else if(h<180){r=0;g=c;b=x;}
+    else if(h<240){r=0;g=x;b=c;} else if(h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+    return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+  }
+  function rgbToHsv(r,g,b){
+    r/=255; g/=255; b/=255;
+    var max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min, h=0;
+    if(d!==0){
+      if(max===r) h = 60*(((g-b)/d)%6);
+      else if(max===g) h = 60*((b-r)/d+2);
+      else h = 60*((r-g)/d+4);
+    }
+    if(h<0) h+=360;
+    var s = max===0?0:d/max, v = max;
+    return [h, s*100, v*100];
+  }
+  function rgbToHexStr(r,g,b){
+    return '#' + [r,g,b].map(function(n){ return Math.max(0,Math.min(255,n)).toString(16).padStart(2,'0'); }).join('');
+  }
+  function hexToRgbArr(hex){
+    hex = (hex||'#000000').replace('#','');
+    if(hex.length === 3){ hex = hex.split('').map(function(c){ return c+c; }).join(''); }
+    var n = parseInt(hex,16);
+    if(isNaN(n)) return [0,0,0];
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+
+  var popover = $('colorPopover');
+  var popoverHex = $('popoverHex'), popoverEyedrop = $('popoverEyedrop');
+  var popoverSwatchNew = $('popoverSwatchNew'), popoverSwatchOld = $('popoverSwatchOld');
+  var pickerState = { h:0, s:0, v:0, targetInput:null, originalHex:'#000000' };
+
+  // Build a honeycomb of discrete, clickable hexagon swatches (like the
+  // classic Windows/Office color-wheel dialog) instead of a continuous
+  // drag-to-pick area. Discrete cells are much easier to land on precisely
+  // than freehand-positioning on a gradient.
+  var HEX_SIZE = 12, HEX_RINGS = 5;
+  var HEX_CENTER_X = 102, HEX_CENTER_Y = 116; // half of .hex-wheel-wrap's 204x232
+  function buildHexGrid(rings, size){
+    var cells = [];
+    for(var q=-rings; q<=rings; q++){
+      var r1 = Math.max(-rings, -q-rings), r2 = Math.min(rings, -q+rings);
+      for(var r=r1; r<=r2; r++){
+        cells.push({ x: size*1.5*q, y: size*Math.sqrt(3)*(r+q/2) });
+      }
+    }
+    return cells;
+  }
+  var hexCells = buildHexGrid(HEX_RINGS, HEX_SIZE);
+  var hexMaxDist = Math.max.apply(null, hexCells.map(function(c){ return Math.sqrt(c.x*c.x+c.y*c.y); }));
+
+  var allHexButtons = [];
+  (function renderHexWheel(){
+    var wrap = $('hexWheelWrap');
+    hexCells.forEach(function(c){
+      var dist = Math.sqrt(c.x*c.x+c.y*c.y);
+      var angle = Math.atan2(c.y,c.x)*180/Math.PI; if(angle<0) angle += 360;
+      var sat = Math.min(100, dist/hexMaxDist*100);
+      var rgb = hsvToRgb(angle, sat, 100);
+      var hex = rgbToHexStr(rgb[0], rgb[1], rgb[2]);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hex-cell';
+      btn.style.left = (HEX_CENTER_X + c.x) + 'px';
+      btn.style.top = (HEX_CENTER_Y + c.y) + 'px';
+      btn.style.background = hex;
+      btn.dataset.hex = hex;
+      btn.title = hex;
+      wrap.appendChild(btn);
+      allHexButtons.push(btn);
+    });
+  })();
+  (function renderGrayRow(){
+    var row = $('hexGrayRow');
+    var GRAY_STEPS = 9;
+    for(var i=0;i<GRAY_STEPS;i++){
+      var v = Math.round(255 - i/(GRAY_STEPS-1)*255);
+      var hex = rgbToHexStr(v,v,v);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hex-cell';
+      btn.style.background = hex;
+      btn.dataset.hex = hex;
+      btn.title = hex;
+      row.appendChild(btn);
+      allHexButtons.push(btn);
+    }
+  })();
+
+  function selectHexButton(hex, sourceBtn){
+    var rgb = hexToRgbArr(hex);
+    var hsv = rgbToHsv(rgb[0], rgb[1], rgb[2]);
+    pickerState.h = hsv[0]; pickerState.s = hsv[1]; pickerState.v = hsv[2];
+    updateSwatchAndHex();
+    applyToTarget(false); // live preview on the canvas object; "확인" commits it to recent colors
+    allHexButtons.forEach(function(b){ b.classList.remove('selected'); });
+    if(sourceBtn) sourceBtn.classList.add('selected');
+  }
+  $('hexWheelWrap').addEventListener('click', function(e){
+    var btn = e.target.closest('.hex-cell');
+    if(btn) selectHexButton(btn.dataset.hex, btn);
+  });
+  $('hexGrayRow').addEventListener('click', function(e){
+    var btn = e.target.closest('.hex-cell');
+    if(btn) selectHexButton(btn.dataset.hex, btn);
+  });
+
+  function updateSwatchAndHex(){
+    var rgb = hsvToRgb(pickerState.h, pickerState.s, pickerState.v);
+    var hex = rgbToHexStr(rgb[0], rgb[1], rgb[2]);
+    popoverSwatchNew.style.background = hex;
+    popoverHex.value = hex;
+    return hex;
+  }
+
+  function applyToTarget(dispatchChange){
+    if(!pickerState.targetInput) return;
+    var hex = updateSwatchAndHex();
+    pickerState.targetInput.value = hex;
+    pickerState.targetInput.dispatchEvent(new Event('input', { bubbles:true }));
+    if(dispatchChange) pickerState.targetInput.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+
+  function openColorPopover(inputEl){
+    pickerState.targetInput = inputEl;
+    pickerState.originalHex = inputEl.value;
+    var rgb = hexToRgbArr(inputEl.value);
+    var hsv = rgbToHsv(rgb[0], rgb[1], rgb[2]);
+    pickerState.h = hsv[0]; pickerState.s = hsv[1]; pickerState.v = hsv[2];
+    updateSwatchAndHex();
+    popoverSwatchOld.style.background = pickerState.originalHex;
+    allHexButtons.forEach(function(b){ b.classList.toggle('selected', b.dataset.hex === pickerState.originalHex); });
+
+    var rect = inputEl.getBoundingClientRect();
+    popover.classList.add('show');
+    var pw = popover.offsetWidth || 236;
+    var left = Math.min(rect.left, window.innerWidth - pw - 12);
+    var top = rect.bottom + 8;
+    if(top + 380 > window.innerHeight){ top = Math.max(8, rect.top - 380 - 8); }
+    popover.style.left = Math.max(8,left) + 'px';
+    popover.style.top = top + 'px';
+  }
+  function closeColorPopover(){
+    popover.classList.remove('show');
+    pickerState.targetInput = null;
+  }
+
+  // Intercept color selection at the source: a transparent button sits on
+  // top of each <input type="color">, so the real input never receives a
+  // genuine click and its native OS picker can never open (this is more
+  // reliable than trying to preventDefault() the input's own click, which
+  // some browsers ignore).
+  document.querySelectorAll('.color-field-overlay').forEach(function(overlayBtn){
+    overlayBtn.addEventListener('click', function(){
+      var input = $(overlayBtn.getAttribute('data-for'));
+      if(input) openColorPopover(input);
+    });
+  });
+
+  popoverHex.addEventListener('change', function(){
+    var v = this.value.trim();
+    if(!/^#?[0-9a-fA-F]{3}$|^#?[0-9a-fA-F]{6}$/.test(v)) { updateSwatchAndHex(); return; }
+    if(v[0] !== '#') v = '#' + v;
+    selectHexButton(v[0]==='#'?v:'#'+v, null);
+    applyToTarget(true);
+  });
+
+  if(window.EyeDropper){
+    popoverEyedrop.addEventListener('click', function(){
+      new EyeDropper().open().then(function(result){
+        selectHexButton(result.sRGBHex, null);
+        applyToTarget(true);
+      }).catch(function(){ /* user cancelled the eyedropper — nothing to do */ });
+    });
+  } else {
+    popoverEyedrop.style.display = 'none'; // not supported in this browser
+  }
+
+  $('popoverDone').addEventListener('click', function(){ applyToTarget(true); closeColorPopover(); });
+  $('popoverCancel').addEventListener('click', function(){
+    if(pickerState.targetInput){
+      pickerState.targetInput.value = pickerState.originalHex;
+      pickerState.targetInput.dispatchEvent(new Event('input', { bubbles:true }));
+      pickerState.targetInput.dispatchEvent(new Event('change', { bubbles:true }));
+    }
+    closeColorPopover();
+  });
+  document.addEventListener('mousedown', function(e){
+    if(popover.classList.contains('show') && !popover.contains(e.target) && e.target.type !== 'color'){
+      closeColorPopover();
+    }
+  });
+
+
   var recentColors = [];
   function pushRecentColor(hex){
     if(!hex) return;
@@ -1340,6 +1643,64 @@
         var l2 = new fabric.Line([0.3*R,0,1.4*R,0], {stroke:c, strokeWidth:sw});
         var dot = new fabric.Circle({radius:R*0.09, left:0, top:0, originX:'center', originY:'center', fill:c});
         return new fabric.Group([l1, dot, l2]);
+      } },
+    // ---- Added set: reviewed specifically for real paper/e-book cover
+    // design use — badge/seal stickers ("베스트셀러" style), divider lines,
+    // a bookmark ribbon, a folded page corner, and genre accents (romance,
+    // essay/lifestyle, speech-bubble humor) that the original 30 didn't cover.
+    { id:'straightLine', label:'직선', build:function(R,c){
+        return new fabric.Line([-1.4*R,0,1.4*R,0], {stroke:c, strokeWidth:Math.max(2,R*0.08)});
+      } },
+    { id:'dashedLine', label:'점선 구분선', build:function(R,c){
+        return new fabric.Line([-1.4*R,0,1.4*R,0], {stroke:c, strokeWidth:Math.max(2,R*0.07), strokeDashArray:[R*0.2,R*0.16]});
+      } },
+    { id:'brushUnderline', label:'브러시 언더라인', build:function(R,c){
+        var d = 'M '+(-1.3*R)+' '+(0.32*R)+' Q '+(-0.3*R)+' '+(-0.42*R)+' '+(1.3*R)+' '+(0.15*R);
+        return new fabric.Path(d, {fill:'', stroke:c, strokeWidth:Math.max(3,R*0.16), strokeLineCap:'round'});
+      } },
+    { id:'bookmarkRibbon', label:'책갈피 리본', build:function(R,c){
+        var pts = [
+          {x:-0.5*R,y:-R},{x:0.5*R,y:-R},{x:0.5*R,y:0.65*R},
+          {x:0,y:0.2*R},{x:-0.5*R,y:0.65*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'pageCurl', label:'페이지 모서리 접힘', build:function(R,c){
+        var fold = new fabric.Polygon([{x:0.3*R,y:-R},{x:R,y:-R},{x:R,y:0.3*R}], {fill:c, opacity:0.35});
+        var corner = new fabric.Polygon([{x:0.3*R,y:-R},{x:R,y:0.3*R},{x:0.3*R,y:0.3*R}], {fill:c});
+        return new fabric.Group([fold, corner]);
+      } },
+    { id:'sealBadge', label:'도장 씰 배지', build:function(R,c){
+        var o1 = new fabric.Circle({radius:R*0.85, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.07)});
+        var o2 = new fabric.Circle({radius:R*0.62, fill:'', stroke:c, strokeWidth:Math.max(2,R*0.055)});
+        var star = new fabric.Polygon(starPts(5,R*0.32,R*0.13), {fill:c});
+        return new fabric.Group([o1, o2, star]);
+      } },
+    { id:'leafSprig', label:'나뭇잎 스프리그', build:function(R,c){
+        var stem = new fabric.Line([0,R,0,-R], {stroke:c, strokeWidth:Math.max(2,R*0.06)});
+        function leaf(y, angle, mirror){
+          var d = 'M 0 0 Q '+(0.5*R)+' '+(-0.28*R)+' 0 '+(-0.62*R)+' Q '+(-0.5*R)+' '+(-0.28*R)+' 0 0 Z';
+          var p = new fabric.Path(d, {fill:c, left:0, top:y, originX:'center', originY:'center', angle: angle * (mirror?-1:1)});
+          return p;
+        }
+        return new fabric.Group([stem, leaf(0.35*R,55,false), leaf(-0.05*R,55,true), leaf(-0.45*R,55,false), leaf(-0.85*R,20,true)]);
+      } },
+    { id:'heart', label:'하트', build:function(R,c){
+        var d = 'M 0 '+(0.38*R)+' C '+(-1.2*R)+' '+(-0.32*R)+' '+(-0.55*R)+' '+(-1.05*R)+' 0 '+(-0.4*R)+
+                ' C '+(0.55*R)+' '+(-1.05*R)+' '+(1.2*R)+' '+(-0.32*R)+' 0 '+(0.38*R)+' Z';
+        return new fabric.Path(d, {fill:c});
+      } },
+    { id:'arrow', label:'화살표', build:function(R,c){
+        var pts = [
+          {x:-1.3*R,y:-0.18*R},{x:0.45*R,y:-0.18*R},{x:0.45*R,y:-0.5*R},{x:1.3*R,y:0},
+          {x:0.45*R,y:0.5*R},{x:0.45*R,y:0.18*R},{x:-1.3*R,y:0.18*R}
+        ];
+        return new fabric.Polygon(pts, {fill:c});
+      } },
+    { id:'speechBubble', label:'말풍선', build:function(R,c){
+        var body = new fabric.Rect({width:R*1.9, height:R*1.3, rx:R*0.28, ry:R*0.28, fill:c, left:0, top:-R*0.1, originX:'center', originY:'center'});
+        var tail = new fabric.Polygon([{x:-0.15*R,y:0.5*R},{x:0.35*R,y:0.5*R},{x:-0.1*R,y:R}], {fill:c});
+        return new fabric.Group([body, tail]);
       } }
   ];
 
@@ -1392,7 +1753,50 @@
 
   canvas.on('selection:created', onSelect);
   canvas.on('selection:updated', onSelect);
-  canvas.on('selection:cleared', function(){ showPanel('empty'); });
+  canvas.on('selection:cleared', function(){
+    // Group/ungroup operations can fire a stray 'selection:cleared' while
+    // swapping the active object internally. If something is already
+    // active by the time this runs, that swap already finished — don't
+    // blank the panel out from under it.
+    if(canvas.getActiveObject()) return;
+    showPanel('empty');
+  });
+
+  // ---------- Double-click a grouped shape+text to edit the text directly ----------
+  // Fabric doesn't let you type into a Textbox while it's nested inside a
+  // Group — a double-click just re-selects the group. So for our own
+  // "userGroup" groups (made by the shape+text quick-add), a double-click
+  // temporarily ungroups, puts the text straight into edit mode, and
+  // automatically re-groups everything back together the moment the user
+  // clicks away / finishes editing.
+  canvas.on('mouse:dblclick', function(opt){
+    var target = opt.target;
+    if(!target || target.type !== 'group' || !target.data || target.data.type !== 'userGroup') return;
+    var textChild = null;
+    target.forEachObject(function(o){ if(o.data && o.data.type === 'text') textChild = o; });
+    if(!textChild) return;
+
+    var tempSelection = target.toActiveSelection();
+    var members = tempSelection.getObjects().slice();
+    canvas.discardActiveObject();
+    canvas.setActiveObject(textChild);
+    textChild.enterEditing();
+    textChild.selectAll();
+    canvas.requestRenderAll();
+
+    function regroup(){
+      textChild.off('editing:exited', regroup);
+      if(!canvas.contains(textChild)) return; // safety: object was deleted while editing
+      var sel2 = new fabric.ActiveSelection(members, { canvas: canvas });
+      canvas.setActiveObject(sel2);
+      var grp2 = sel2.toGroup();
+      grp2.data = { type:'userGroup' };
+      canvas.requestRenderAll();
+      onSelect();
+      updateThumbnails();
+    }
+    textChild.on('editing:exited', regroup);
+  });
 
   function onSelect(e){
     var obj = canvas.getActiveObject();
@@ -1666,6 +2070,50 @@
     textObj.setCoords();
     canvas.requestRenderAll();
     updateThumbnails();
+  });
+
+  // ---------- Add text directly onto a shape, in one step ----------
+  function addTextToShape(){
+    var shape = activeShape();
+    if(!shape) return;
+    var text = $('shapeTextInput').value.trim();
+    if(!text) return;
+    var bounds = shape.getBoundingRect(true, true);
+    var fontSize = Math.max(10, Math.min(36, bounds.height * 0.28));
+    var tb = new fabric.Textbox(text, {
+      left: bounds.left + bounds.width/2,
+      top: bounds.top + bounds.height/2,
+      width: bounds.width * 0.82,
+      fontSize: fontSize,
+      fontFamily: "'Noto Sans KR', sans-serif",
+      fontWeight: 700,
+      fill: '#000000',
+      textAlign: 'center',
+      originX: 'center',
+      originY: 'center',
+      lineHeight: 1.15
+    });
+    tb.data = { type:'text', role:'title' };
+    canvas.add(tb);
+    canvas.bringToFront(tb);
+
+    // Auto-group only for this quick-add flow, so the shape and its text
+    // move/scale/rotate together from now on. (Not applied to the separate
+    // "이 도형 중앙으로 이동" flow — that one stays as two independent objects.)
+    var sel = new fabric.ActiveSelection([shape, tb], { canvas: canvas });
+    canvas.setActiveObject(sel);
+    var grp = sel.toGroup();
+    grp.data = { type:'userGroup' };
+
+    $('shapeTextInput').value = '';
+    keepBackgroundAtBottom();
+    canvas.requestRenderAll();
+    onSelect();
+    updateThumbnails();
+  }
+  $('btnAddTextToShape').addEventListener('click', addTextToShape);
+  $('shapeTextInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); addTextToShape(); }
   });
 
   // ---------- Move a text box onto a shape (explicit, user-driven) ----------
@@ -2000,6 +2448,6 @@
 
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:6px;font-size:10px;color:#888;z-index:9999;pointer-events:none;">build: upload-box-display-fix-v9</div>
+<div style="position:fixed;bottom:4px;right:6px;font-size:10px;color:#888;z-index:9999;pointer-events:none;">build: edit-grouped-text-v15</div>
 </body>
 </html>
