@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>베타 통계</title></head>
+<body style="font-family:sans-serif;padding:40px;max-width:700px;margin:auto;line-height:1.8;">
+  <h2>다온북스 베타 통계</h2>
+  <div id="content">불러오는 중...</div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCSv6GO8mQOkZUpXTqj7X8IHQYM49npFM4",
+      authDomain: "daonbooks-be849.firebaseapp.com",
+      projectId: "daonbooks-be849"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const ADMIN_EMAIL = "mkcenter017@gmail.com";
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      const content = document.getElementById('content');
+      if (!user) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(provider);
+        return;
+      }
+      if (user.email !== ADMIN_EMAIL) {
+        content.textContent = '접근 권한이 없습니다.';
+        return;
+      }
+
+      const snapshot = await db.collection('events').get();
+      let totalVisits = 0, totalDownloads = 0;
+      const siteVisits = {}, toolDownloads = {};
+
+      snapshot.forEach((doc) => {
+        const d = doc.data();
+        if (d.event_type === 'visit') {
+          totalVisits++;
+          siteVisits[d.site] = (siteVisits[d.site] || 0) + 1;
+        }
+        if (d.event_type === 'download') {
+          totalDownloads++;
+          toolDownloads[d.tool_name] = (toolDownloads[d.tool_name] || 0) + 1;
+        }
+      });
+
+      let html = `<p><b>전체 방문 수:</b> ${totalVisits}</p>`;
+      html += `<p><b>전체 다운로드 수:</b> ${totalDownloads}</p>`;
+      html += '<h3>사이트별 방문</h3><ul>';
+      for (const s in siteVisits) html += `<li>${s}: ${siteVisits[s]}회</li>`;
+      html += '</ul><h3>프로그램별 다운로드</h3><ul>';
+      for (const t in toolDownloads) html += `<li>${t}: ${toolDownloads[t]}회</li>`;
+      html += '</ul>';
+      content.innerHTML = html;
+    });
+  </script>
+</body>
+</html>
