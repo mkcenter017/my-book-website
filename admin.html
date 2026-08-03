@@ -53,6 +53,24 @@
       html += '</ul><h3>프로그램별 다운로드</h3><ul>';
       for (const t in toolDownloads) html += `<li>${t}: ${toolDownloads[t]}회</li>`;
       html += '</ul>';
+
+      const fbSnapshot = await db.collection('feedback').orderBy('timestamp', 'desc').get();
+      html += '<h3>제안함 (' + fbSnapshot.size + '건)</h3>';
+      if (fbSnapshot.empty) {
+        html += '<p style="color:#888;">아직 접수된 제안이 없습니다.</p>';
+      } else {
+        html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+        fbSnapshot.forEach((doc) => {
+          const d = doc.data();
+          const date = d.timestamp ? d.timestamp.toDate().toLocaleString('ko-KR') : '';
+          html += `<div style="border:1px solid #ddd;border-radius:8px;padding:14px;">
+            <div style="font-size:13px;color:#888;">${date} · ${d.user_email || '익명'} · ${d.site || ''}</div>
+            <div style="margin-top:6px;white-space:pre-wrap;">${d.message}</div>
+          </div>`;
+        });
+        html += '</div>';
+      }
+
       content.innerHTML = html;
     });
   </script>
