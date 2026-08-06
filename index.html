@@ -230,6 +230,7 @@
   .showcase-row{ display:flex; gap:12px; }
   .showcase-row label{ flex:1; }
   .showcase-hint{ font-size:12px; color:var(--ember); margin:-6px 0 14px; }
+  .showcase-char-count{ display:block; text-align:right; font-size:12px; color:rgba(30,36,51,0.45); margin-top:4px; font-weight:400; }
   .req{ color:#e5484d; }
   #sc-submit-btn{ width:100%; border:none; cursor:pointer; padding:13px; border-radius:8px; font-size:15px; font-weight:600; font-family:inherit; background:var(--ember); color:#fff; }
   .showcase-status{ font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
@@ -514,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <p class="showcase-hint">💡 첨부하신 이미지는 웹 최적화를 위해 자동 압축되어 등록됩니다.</p>
       <label>책 소개
         <textarea id="sc-desc" maxlength="3000" rows="10"></textarea>
+        <span id="sc-desc-count" class="showcase-char-count">0/3000</span>
       </label>
       <label>구매/판매 링크
         <input type="url" id="sc-link" placeholder="https://product.kyobobook.co.kr/...">
@@ -575,6 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sdAuthor = document.getElementById('sd-author');
   const sdDesc = document.getElementById('sd-desc');
   const sdLink = document.getElementById('sd-link');
+  const scDescInput = document.getElementById('sc-desc');
+  const scDescCount = document.getElementById('sc-desc-count');
 
   let scEditingId = null;
   let scDocsById = {};
@@ -583,12 +587,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return !!userEmail && (userEmail === ownerEmail || userEmail === ADMIN_EMAIL);
   }
 
+  function scUpdateDescCount() {
+    scDescCount.textContent = scDescInput.value.length + '/3000';
+  }
+  scDescInput.addEventListener('input', scUpdateDescCount);
+
   function scResetFormToCreateMode() {
     scEditingId = null;
     scForm.reset();
     scModalTitle.textContent = '내 책 등록하기';
     scSubmitBtn.textContent = '등록하기';
     scStatus.textContent = '';
+    scUpdateDescCount();
   }
 
   scOpenTriggers.forEach((btn) => {
@@ -684,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sc-publisher').value = data.publisher || '';
     document.getElementById('sc-platform').value = data.platform || 'kyobo';
     document.getElementById('sc-desc').value = data.description || '';
+    scUpdateDescCount();
     document.getElementById('sc-link').value = data.link || '';
     document.getElementById('sc-image').value = '';
     scModalTitle.textContent = '내 책 수정하기';
