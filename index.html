@@ -198,6 +198,46 @@
   .footer-inner{ max-width:1120px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
   .footer-inner .logo{ font-size:16px; }
   .footer-note{ font-size:12.5px; color:rgba(250,247,240,0.4); }
+
+  /* ---------- SHOWCASE (출간 인증 & 책 홍보) ---------- */
+  .showcase{ padding:100px 28px; background:var(--navy); }
+  .showcase-inner{ max-width:1120px; margin:0 auto; }
+  .showcase .kicker{ color:var(--brass); font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; }
+  .showcase h2{ font-size:32px; font-weight:900; margin:10px 0 8px; }
+  .showcase-sub{ color:rgba(250,247,240,0.7); font-size:15px; margin-bottom:28px; }
+  .showcase-cta{ margin-bottom:36px; border:none; cursor:pointer; font-family:inherit; }
+  .showcase-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:24px; }
+  .showcase-card{ background:var(--bone); border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.18); transition:transform .2s ease, box-shadow .2s ease; display:flex; flex-direction:column; }
+  .showcase-card:hover{ transform:translateY(-6px); box-shadow:0 12px 28px rgba(0,0,0,0.28); }
+  .showcase-card-img{ width:100%; aspect-ratio:3/4; object-fit:cover; background:var(--paper); display:block; }
+  .showcase-card-body{ padding:16px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .showcase-tag{ align-self:flex-start; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; background:var(--ember); color:#fff; letter-spacing:0.02em; }
+  .showcase-tag.bookk{ background:var(--brass); color:var(--navy-deep); }
+  .showcase-tag.other{ background:rgba(30,36,51,0.5); color:var(--bone); }
+  .showcase-card-title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; color:var(--charcoal); line-height:1.4; }
+  .showcase-card-author{ font-size:13px; color:rgba(30,36,51,0.6); }
+  .showcase-card-desc{ font-size:13px; color:rgba(30,36,51,0.75); line-height:1.5; flex:1; }
+  .showcase-card-link{ margin-top:6px; display:inline-block; text-align:center; padding:10px 14px; border-radius:8px; background:var(--navy); color:var(--bone); font-size:13px; font-weight:600; text-decoration:none; transition:background .2s ease; }
+  .showcase-card-link:hover{ background:var(--navy-deep); }
+  .showcase-empty{ color:rgba(250,247,240,0.5); font-size:14px; padding:40px 0; text-align:center; }
+  .showcase-modal{ position:fixed; inset:0; z-index:5000; background:rgba(15,27,56,0.72); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .showcase-modal-inner{ background:var(--bone); color:var(--charcoal); border-radius:16px; max-width:480px; width:100%; max-height:88vh; overflow-y:auto; padding:28px; position:relative; }
+  .showcase-close{ position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:rgba(30,36,51,0.5); line-height:1; }
+  .showcase-modal-inner h3{ font-family:'Noto Serif KR',serif; font-size:20px; margin-bottom:20px; }
+  #showcase-form label{ display:block; font-size:13px; font-weight:600; margin-bottom:14px; }
+  #showcase-form input[type="text"], #showcase-form input[type="url"], #showcase-form select, #showcase-form textarea{ display:block; width:100%; margin-top:6px; padding:10px 12px; border:1px solid rgba(30,36,51,0.15); border-radius:8px; font-size:14px; font-family:inherit; color:var(--charcoal); background:#fff; }
+  #showcase-form input[type="file"]{ display:block; width:100%; margin-top:6px; font-size:13px; }
+  .showcase-row{ display:flex; gap:12px; }
+  .showcase-row label{ flex:1; }
+  .showcase-hint{ font-size:12px; color:var(--ember); margin:-6px 0 14px; }
+  .req{ color:#e5484d; }
+  #sc-submit-btn{ width:100%; border:none; cursor:pointer; padding:13px; border-radius:8px; font-size:15px; font-weight:600; font-family:inherit; background:var(--ember); color:#fff; }
+  .showcase-status{ font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
+  @media (max-width:640px){
+    .showcase{ padding:60px 20px; }
+    .showcase-grid{ grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; }
+    .showcase-row{ flex-direction:column; gap:0; }
+  }
 </style>
 </head>
 <body>
@@ -270,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <a href="#services">서비스</a>
       <a href="#how">이용 방법</a>
       <a href="#beta">베타테스트</a>
+      <a href="#showcase">출간홍보</a>
     </div>
     <button id="logout-btn" style="display:none;background:none;border:1px solid #ccc;border-radius:6px;padding:6px 14px;margin-right:8px;cursor:pointer;font-size:14px;color:#fff;">로그아웃</button>
     <a href="#services" class="nav-cta">시작하기</a>   
@@ -402,6 +443,57 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </section>
 
+<section class="showcase" id="showcase">
+  <div class="showcase-inner">
+    <span class="kicker">Book Gallery</span>
+    <h2>출간 인증 & 책 홍보</h2>
+    <p class="showcase-sub">저희 프로그램으로 표지 승인을 통과한 책을 자유롭게 홍보해 보세요!</p>
+    <button id="showcase-open-form-btn" class="btn-primary showcase-cta">+ 내 책 등록하기</button>
+    <div id="showcase-grid" class="showcase-grid"></div>
+    <p id="showcase-empty" class="showcase-empty" style="display:none;">아직 등록된 책이 없습니다. 첫 번째로 등록해보세요!</p>
+  </div>
+</section>
+
+<div id="showcase-modal" class="showcase-modal" style="display:none;">
+  <div class="showcase-modal-inner">
+    <button type="button" id="showcase-close-btn" class="showcase-close">×</button>
+    <h3>내 책 등록하기</h3>
+    <form id="showcase-form">
+      <label>도서 제목 <span class="req">*</span>
+        <input type="text" id="sc-title" required maxlength="100">
+      </label>
+      <div class="showcase-row">
+        <label>작가명
+          <input type="text" id="sc-author" maxlength="50">
+        </label>
+        <label>출판사
+          <input type="text" id="sc-publisher" maxlength="50">
+        </label>
+      </div>
+      <label>출간 플랫폼
+        <select id="sc-platform">
+          <option value="kyobo">교보문고 POD</option>
+          <option value="bookk">부크크</option>
+          <option value="other">기타</option>
+        </select>
+      </label>
+      <label>표지 / 승인 인증 이미지
+        <input type="file" id="sc-image" accept="image/*">
+      </label>
+      <p class="showcase-hint">💡 첨부하신 이미지는 웹 최적화를 위해 자동 압축되어 등록됩니다.</p>
+      <label>책 소개
+        <textarea id="sc-desc" maxlength="300" rows="3"></textarea>
+      </label>
+      <label>구매/판매 링크
+        <input type="url" id="sc-link" placeholder="https://product.kyobobook.co.kr/...">
+      </label>
+      <button type="submit" id="sc-submit-btn">등록하기</button>
+      <p id="sc-status" class="showcase-status"></p>
+    </form>
+  </div>
+</div>
+
+
 <section class="cta-section">
   <h2>지금, 원고를 책으로 만들어보세요</h2>
   <p>베타테스트 기간에는 무료 횟수 안에서 자유롭게 이용하실 수 있습니다.</p>
@@ -414,5 +506,132 @@ document.addEventListener('DOMContentLoaded', () => {
     <span class="footer-note">© 2026 Daonbooks. Beta Service.</span>
   </div>
 </footer>
+
+<script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+<script>
+  const scGrid = document.getElementById('showcase-grid');
+  const scEmpty = document.getElementById('showcase-empty');
+  const scModal = document.getElementById('showcase-modal');
+  const scOpenBtn = document.getElementById('showcase-open-form-btn');
+  const scCloseBtn = document.getElementById('showcase-close-btn');
+  const scForm = document.getElementById('showcase-form');
+  const scStatus = document.getElementById('sc-status');
+  const scSubmitBtn = document.getElementById('sc-submit-btn');
+  const platformLabel = { kyobo:'교보POD', bookk:'부크크', other:'기타' };
+
+  scOpenBtn.addEventListener('click', () => {
+    if (!firebase.auth().currentUser) { alert('책 등록은 로그인 후 이용하실 수 있습니다.'); return; }
+    scModal.style.display = 'flex';
+  });
+  scCloseBtn.addEventListener('click', () => { scModal.style.display = 'none'; });
+  scModal.addEventListener('click', (e) => { if (e.target === scModal) scModal.style.display = 'none'; });
+
+  function compressShowcaseImage(file) {
+    return new Promise((resolve, reject) => {
+      new Compressor(file, {
+        maxWidth: 900,
+        quality: 0.7,
+        mimeType: 'image/jpeg',
+        success(result) {
+          if (result.size > 150 * 1024) {
+            new Compressor(result, { maxWidth: 700, quality: 0.5, mimeType: 'image/jpeg', success: resolve, error: reject });
+          } else {
+            resolve(result);
+          }
+        },
+        error: reject
+      });
+    });
+  }
+
+  function scBlobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function scEscapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  scForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = firebase.auth().currentUser;
+    if (!user) { alert('로그인 후 이용해주세요.'); return; }
+
+    const title = document.getElementById('sc-title').value.trim();
+    if (!title) { scStatus.textContent = '도서 제목을 입력해주세요.'; return; }
+
+    const author = document.getElementById('sc-author').value.trim();
+    const publisher = document.getElementById('sc-publisher').value.trim();
+    const platform = document.getElementById('sc-platform').value;
+    const description = document.getElementById('sc-desc').value.trim();
+    const link = document.getElementById('sc-link').value.trim();
+    const file = document.getElementById('sc-image').files[0];
+
+    scSubmitBtn.disabled = true;
+    scStatus.textContent = '등록 중입니다...';
+
+    try {
+      let coverImage = '';
+      if (file) {
+        scStatus.textContent = '이미지를 최적화하는 중입니다...';
+        const compressed = await compressShowcaseImage(file);
+        coverImage = await scBlobToBase64(compressed);
+      }
+
+      await db.collection('showcase').add({
+        title, author, publisher, platform, description, link, coverImage,
+        userEmail: user.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      scStatus.textContent = '등록되었습니다!';
+      scForm.reset();
+      setTimeout(() => { scModal.style.display = 'none'; scStatus.textContent = ''; }, 1000);
+    } catch (err) {
+      scStatus.textContent = '등록 실패: ' + err.message;
+    } finally {
+      scSubmitBtn.disabled = false;
+    }
+  });
+
+  function renderShowcase(docs) {
+    if (docs.length === 0) { scGrid.innerHTML = ''; scEmpty.style.display = 'block'; return; }
+    scEmpty.style.display = 'none';
+    scGrid.innerHTML = docs.map((d) => {
+      const data = d.data();
+      const img = data.coverImage || '';
+      const tag = platformLabel[data.platform] || '기타';
+      const tagClass = data.platform === 'bookk' ? 'bookk' : (data.platform === 'other' ? 'other' : '');
+      const titleSafe = scEscapeHtml(data.title || '');
+      const authorSafe = data.author ? scEscapeHtml(data.author) : '';
+      const descSafe = data.description ? scEscapeHtml(data.description) : '';
+      const linkSafe = data.link ? scEscapeHtml(data.link) : '';
+      return '<div class="showcase-card">' +
+        (img ? '<img class="showcase-card-img" src="' + img + '" alt="' + titleSafe + ' 표지" loading="lazy">' : '') +
+        '<div class="showcase-card-body">' +
+        '<span class="showcase-tag ' + tagClass + '">' + tag + '</span>' +
+        '<div class="showcase-card-title">' + titleSafe + '</div>' +
+        (authorSafe ? '<div class="showcase-card-author">' + authorSafe + '</div>' : '') +
+        (descSafe ? '<div class="showcase-card-desc">' + descSafe + '</div>' : '') +
+        (linkSafe ? '<a class="showcase-card-link" href="' + linkSafe + '" target="_blank" rel="noopener noreferrer">구매하러 가기</a>' : '') +
+        '</div></div>';
+    }).join('');
+  }
+
+  db.collection('showcase').orderBy('createdAt', 'desc').limit(60).onSnapshot((snapshot) => {
+    renderShowcase(snapshot.docs);
+  }, (err) => {
+    console.error('쇼케이스 로드 실패', err);
+    scEmpty.textContent = '갤러리를 불러오지 못했습니다.';
+    scEmpty.style.display = 'block';
+  });
+</script>
 </body>
 </html>
