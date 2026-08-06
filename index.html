@@ -216,7 +216,7 @@
   .showcase-tag.other{ background:rgba(30,36,51,0.5); color:var(--bone); }
   .showcase-card-title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; color:var(--charcoal); line-height:1.4; }
   .showcase-card-author{ font-size:13px; color:rgba(30,36,51,0.6); }
-  .showcase-card-desc{ font-size:13px; color:rgba(30,36,51,0.75); line-height:1.5; flex:1; }
+  .showcase-card-desc{ font-size:13px; color:rgba(30,36,51,0.75); line-height:1.5; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis; }
   .showcase-card-link{ margin-top:6px; display:inline-block; text-align:center; padding:10px 14px; border-radius:8px; background:var(--navy); color:var(--bone); font-size:13px; font-weight:600; text-decoration:none; transition:background .2s ease; }
   .showcase-card-link:hover{ background:var(--navy-deep); }
   .showcase-empty{ color:rgba(250,247,240,0.5); font-size:14px; padding:40px 0; text-align:center; }
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </label>
       <p class="showcase-hint">💡 첨부하신 이미지는 웹 최적화를 위해 자동 압축되어 등록됩니다.</p>
       <label>책 소개
-        <textarea id="sc-desc" maxlength="1000" rows="6"></textarea>
+        <textarea id="sc-desc" maxlength="3000" rows="10"></textarea>
       </label>
       <label>구매/판매 링크
         <input type="url" id="sc-link" placeholder="https://product.kyobobook.co.kr/...">
