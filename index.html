@@ -207,7 +207,7 @@
   .showcase-sub{ color:rgba(250,247,240,0.7); font-size:15px; margin-bottom:28px; }
   .showcase-cta{ margin-bottom:36px; border:none; cursor:pointer; font-family:inherit; }
   .showcase-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 210px)); gap:20px; justify-content:center; }
-  .showcase-card{ background:var(--bone); border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.18); transition:transform .2s ease, box-shadow .2s ease; display:flex; flex-direction:column; max-width:220px; width:100%; }
+  .showcase-card{ background:var(--bone); border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.18); transition:transform .2s ease, box-shadow .2s ease; display:flex; flex-direction:column; cursor:pointer; max-width:220px; width:100%; }
   .showcase-card:hover{ transform:translateY(-6px); box-shadow:0 12px 28px rgba(0,0,0,0.28); }
   .showcase-card-img{ width:100%; aspect-ratio:3/4; object-fit:cover; background:var(--paper); display:block; }
   .showcase-card-body{ padding:16px; display:flex; flex-direction:column; gap:8px; flex:1; }
@@ -243,6 +243,12 @@
   .showcase-card-actions button{ flex:1; border:1px solid rgba(30,36,51,0.15); background:#fff; border-radius:6px; padding:6px 8px; font-size:12px; cursor:pointer; font-family:inherit; color:var(--charcoal); }
   .showcase-card-actions button:hover{ background:rgba(30,36,51,0.06); }
   .showcase-card-actions .showcase-delete-btn{ color:#c0392b; border-color:rgba(192,57,43,0.3); }
+
+  .showcase-detail-inner{ max-width:420px; text-align:left; }
+  .showcase-detail-img{ width:100%; border-radius:12px; margin-bottom:16px; display:block; }
+  .showcase-detail-title{ font-family:'Noto Serif KR',serif; font-size:20px; font-weight:700; margin:10px 0 4px; }
+  .showcase-detail-author{ font-size:13px; color:rgba(30,36,51,0.6); margin-bottom:14px; }
+  .showcase-detail-desc{ font-size:14px; line-height:1.6; color:rgba(30,36,51,0.85); white-space:pre-wrap; margin-bottom:18px; }
 </style>
 </head>
 <body>
@@ -498,6 +504,18 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
+<div id="showcase-detail-modal" class="showcase-modal" style="display:none;">
+  <div class="showcase-modal-inner showcase-detail-inner">
+    <button type="button" id="showcase-detail-close-btn" class="showcase-close">×</button>
+    <img id="sd-image" class="showcase-detail-img" style="display:none;" alt="">
+    <span id="sd-tag" class="showcase-tag"></span>
+    <h3 id="sd-title" class="showcase-detail-title"></h3>
+    <p id="sd-author" class="showcase-detail-author"></p>
+    <p id="sd-desc" class="showcase-detail-desc"></p>
+    <a id="sd-link" class="showcase-card-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">구매하러 가기</a>
+  </div>
+</div>
+
 
 <section class="cta-section">
   <h2>지금, 원고를 책으로 만들어보세요</h2>
@@ -514,6 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
 <script>
+  const ADMIN_EMAIL = 'mkcenter017@gmail.com';
   const scGrid = document.getElementById('showcase-grid');
   const scEmpty = document.getElementById('showcase-empty');
   const scModal = document.getElementById('showcase-modal');
@@ -525,8 +544,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const scModalTitle = document.querySelector('#showcase-modal h3');
   const platformLabel = { kyobo:'교보POD', bookk:'부크크', other:'기타' };
 
+  const scDetailModal = document.getElementById('showcase-detail-modal');
+  const scDetailCloseBtn = document.getElementById('showcase-detail-close-btn');
+  const sdImage = document.getElementById('sd-image');
+  const sdTag = document.getElementById('sd-tag');
+  const sdTitle = document.getElementById('sd-title');
+  const sdAuthor = document.getElementById('sd-author');
+  const sdDesc = document.getElementById('sd-desc');
+  const sdLink = document.getElementById('sd-link');
+
   let scEditingId = null;
   let scDocsById = {};
+
+  function scIsManager(userEmail, ownerEmail) {
+    return !!userEmail && (userEmail === ownerEmail || userEmail === ADMIN_EMAIL);
+  }
 
   function scResetFormToCreateMode() {
     scEditingId = null;
@@ -543,6 +575,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   scCloseBtn.addEventListener('click', () => { scModal.style.display = 'none'; });
   scModal.addEventListener('click', (e) => { if (e.target === scModal) scModal.style.display = 'none'; });
+
+  scDetailCloseBtn.addEventListener('click', () => { scDetailModal.style.display = 'none'; });
+  scDetailModal.addEventListener('click', (e) => { if (e.target === scDetailModal) scDetailModal.style.display = 'none'; });
 
   function compressShowcaseImage(file) {
     return new Promise((resolve, reject) => {
@@ -577,9 +612,40 @@ document.addEventListener('DOMContentLoaded', () => {
     return div.innerHTML;
   }
 
+  function scOpenDetailModal(docId) {
+    const data = scDocsById[docId];
+    if (!data) return;
+    const tag = platformLabel[data.platform] || '기타';
+    const tagClass = data.platform === 'bookk' ? 'bookk' : (data.platform === 'other' ? 'other' : '');
+    if (data.coverImage) {
+      sdImage.src = data.coverImage;
+      sdImage.alt = (data.title || '') + ' 표지';
+      sdImage.style.display = 'block';
+    } else {
+      sdImage.style.display = 'none';
+    }
+    sdTag.textContent = tag;
+    sdTag.className = 'showcase-tag ' + tagClass;
+    sdTitle.textContent = data.title || '';
+    const authorLine = [data.author, data.publisher].filter(Boolean).join(' · ');
+    sdAuthor.textContent = authorLine;
+    sdAuthor.style.display = authorLine ? 'block' : 'none';
+    sdDesc.textContent = data.description || '';
+    sdDesc.style.display = data.description ? 'block' : 'none';
+    if (data.link) {
+      sdLink.href = data.link;
+      sdLink.style.display = 'inline-block';
+    } else {
+      sdLink.style.display = 'none';
+    }
+    scDetailModal.style.display = 'flex';
+  }
+
   function scOpenEditModal(docId) {
     const data = scDocsById[docId];
     if (!data) return;
+    const user = firebase.auth().currentUser;
+    if (!user || !scIsManager(user.email, data.userEmail)) { alert('작성자 또는 관리자만 수정할 수 있습니다.'); return; }
     scEditingId = docId;
     document.getElementById('sc-title').value = data.title || '';
     document.getElementById('sc-author').value = data.author || '';
@@ -598,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = scDocsById[docId];
     if (!data) return;
     const user = firebase.auth().currentUser;
-    if (!user || user.email !== data.userEmail) { alert('본인이 등록한 글만 삭제할 수 있습니다.'); return; }
+    if (!user || !scIsManager(user.email, data.userEmail)) { alert('작성자 또는 관리자만 삭제할 수 있습니다.'); return; }
     if (!confirm('정말 삭제하시겠어요? 삭제한 글은 복구할 수 없습니다.')) return;
     try {
       await db.collection('showcase').doc(docId).delete();
@@ -610,8 +676,12 @@ document.addEventListener('DOMContentLoaded', () => {
   scGrid.addEventListener('click', (e) => {
     const editBtn = e.target.closest('.showcase-edit-btn');
     const delBtn = e.target.closest('.showcase-delete-btn');
-    if (editBtn) scOpenEditModal(editBtn.dataset.id);
-    if (delBtn) scDeletePost(delBtn.dataset.id);
+    const buyLink = e.target.closest('.showcase-card-link');
+    if (editBtn) { scOpenEditModal(editBtn.dataset.id); return; }
+    if (delBtn) { scDeletePost(delBtn.dataset.id); return; }
+    if (buyLink) { return; }
+    const card = e.target.closest('.showcase-card');
+    if (card) scOpenDetailModal(card.dataset.id);
   });
 
   scForm.addEventListener('submit', async (e) => {
@@ -643,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (scEditingId) {
         const existing = scDocsById[scEditingId];
-        if (!existing || existing.userEmail !== user.email) { alert('본인이 등록한 글만 수정할 수 있습니다.'); return; }
+        if (!existing || !scIsManager(user.email, existing.userEmail)) { alert('작성자 또는 관리자만 수정할 수 있습니다.'); return; }
         await db.collection('showcase').doc(scEditingId).update(payload);
         scStatus.textContent = '수정되었습니다!';
       } else {
@@ -678,8 +748,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const authorSafe = data.author ? scEscapeHtml(data.author) : '';
       const descSafe = data.description ? scEscapeHtml(data.description) : '';
       const linkSafe = data.link ? scEscapeHtml(data.link) : '';
-      const isOwner = currentEmail && data.userEmail === currentEmail;
-      return '<div class="showcase-card">' +
+      const canManage = scIsManager(currentEmail, data.userEmail);
+      return '<div class="showcase-card" data-id="' + d.id + '">' +
         (img ? '<img class="showcase-card-img" src="' + img + '" alt="' + titleSafe + ' 표지" loading="lazy">' : '') +
         '<div class="showcase-card-body">' +
         '<span class="showcase-tag ' + tagClass + '">' + tag + '</span>' +
@@ -687,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (authorSafe ? '<div class="showcase-card-author">' + authorSafe + '</div>' : '') +
         (descSafe ? '<div class="showcase-card-desc">' + descSafe + '</div>' : '') +
         (linkSafe ? '<a class="showcase-card-link" href="' + linkSafe + '" target="_blank" rel="noopener noreferrer">구매하러 가기</a>' : '') +
-        (isOwner ? '<div class="showcase-card-actions"><button type="button" class="showcase-edit-btn" data-id="' + d.id + '">수정</button><button type="button" class="showcase-delete-btn" data-id="' + d.id + '">삭제</button></div>' : '') +
+        (canManage ? '<div class="showcase-card-actions"><button type="button" class="showcase-edit-btn" data-id="' + d.id + '">수정</button><button type="button" class="showcase-delete-btn" data-id="' + d.id + '">삭제</button></div>' : '') +
         '</div></div>';
     }).join('');
   }
