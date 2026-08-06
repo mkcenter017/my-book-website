@@ -206,8 +206,8 @@
   .showcase h2{ font-size:32px; font-weight:900; margin:10px 0 8px; }
   .showcase-sub{ color:rgba(250,247,240,0.7); font-size:15px; margin-bottom:28px; }
   .showcase-cta{ margin-bottom:36px; border:none; cursor:pointer; font-family:inherit; }
-  .showcase-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:24px; }
-  .showcase-card{ background:var(--bone); border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.18); transition:transform .2s ease, box-shadow .2s ease; display:flex; flex-direction:column; }
+  .showcase-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 210px)); gap:20px; justify-content:center; }
+  .showcase-card{ background:var(--bone); border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.18); transition:transform .2s ease, box-shadow .2s ease; display:flex; flex-direction:column; max-width:220px; width:100%; }
   .showcase-card:hover{ transform:translateY(-6px); box-shadow:0 12px 28px rgba(0,0,0,0.28); }
   .showcase-card-img{ width:100%; aspect-ratio:3/4; object-fit:cover; background:var(--paper); display:block; }
   .showcase-card-body{ padding:16px; display:flex; flex-direction:column; gap:8px; flex:1; }
@@ -235,9 +235,14 @@
   .showcase-status{ font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
   @media (max-width:640px){
     .showcase{ padding:60px 20px; }
-    .showcase-grid{ grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; }
+    .showcase-grid{ grid-template-columns:repeat(auto-fill, minmax(130px,150px)); gap:12px; justify-content:center; }
     .showcase-row{ flex-direction:column; gap:0; }
   }
+
+  .showcase-card-actions{ display:flex; gap:6px; margin-top:8px; }
+  .showcase-card-actions button{ flex:1; border:1px solid rgba(30,36,51,0.15); background:#fff; border-radius:6px; padding:6px 8px; font-size:12px; cursor:pointer; font-family:inherit; color:var(--charcoal); }
+  .showcase-card-actions button:hover{ background:rgba(30,36,51,0.06); }
+  .showcase-card-actions .showcase-delete-btn{ color:#c0392b; border-color:rgba(192,57,43,0.3); }
 </style>
 </head>
 <body>
@@ -371,8 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <div class="beta-banner" id="beta">
         <span class="badge">BETA</span>
-        <p>지금은 베타테스트 중입니다.</p>
-        <p style="margin-top:8px;">저희 프로그램으로 제작한 표지로 교보문고 바로출판 POD, 부크크 등의 승인을 통과하셨나요? '출간홍보' 게시판에 올려서 여러분의 책을 널리 홍보해 보세요!"<br>개선하고 싶은 점이나 원하시는 기능도 아래에 자유롭게 남겨주시면 적극 반영하겠습니다.</p>
+        <p>지금은 베타테스트 기간입니다. 모든 기능을 무료로 체험하실 수 있습니다.</p>
+        <p style="margin-top:8px;">저희 프로그램으로 제작한 표지로 교보문고 바로출판 POD, 부크크 등의 승인을 통과하셨나요? '승인 인증 게시판'에 올려서 여러분의 책을 널리 홍보해 보세요!"<br>개선하고 싶은 점이나 원하시는 기능도 아래에 자유롭게 남겨주시면 적극 반영하겠습니다.</p>
 
         <div style="margin-top:20px;max-width:480px;">
           <textarea id="feedbackText" placeholder="통과 후기, 불편한 점, 원하는 기능 등 자유롭게 남겨주세요" style="width:100%;min-height:100px;padding:12px;border-radius:8px;border:1px solid #444;background:#101423;color:#fff;font-family:inherit;font-size:14px;resize:vertical;"></textarea>
@@ -496,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <section class="cta-section">
   <h2>지금, 원고를 책으로 만들어보세요</h2>
-  <p>베타테스트 기간입니다. 자유롭게 이용하실 수 있습니다.</p>
+  <p>베타테스트 기간에는 무료 횟수 안에서 자유롭게 이용하실 수 있습니다.</p>
   <a href="#services" class="btn-primary">무료로 시작하기</a>
 </section>
 
@@ -517,10 +522,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const scForm = document.getElementById('showcase-form');
   const scStatus = document.getElementById('sc-status');
   const scSubmitBtn = document.getElementById('sc-submit-btn');
+  const scModalTitle = document.querySelector('#showcase-modal h3');
   const platformLabel = { kyobo:'교보POD', bookk:'부크크', other:'기타' };
+
+  let scEditingId = null;
+  let scDocsById = {};
+
+  function scResetFormToCreateMode() {
+    scEditingId = null;
+    scForm.reset();
+    scModalTitle.textContent = '내 책 등록하기';
+    scSubmitBtn.textContent = '등록하기';
+    scStatus.textContent = '';
+  }
 
   scOpenBtn.addEventListener('click', () => {
     if (!firebase.auth().currentUser) { alert('책 등록은 로그인 후 이용하실 수 있습니다.'); return; }
+    scResetFormToCreateMode();
     scModal.style.display = 'flex';
   });
   scCloseBtn.addEventListener('click', () => { scModal.style.display = 'none'; });
@@ -559,6 +577,43 @@ document.addEventListener('DOMContentLoaded', () => {
     return div.innerHTML;
   }
 
+  function scOpenEditModal(docId) {
+    const data = scDocsById[docId];
+    if (!data) return;
+    scEditingId = docId;
+    document.getElementById('sc-title').value = data.title || '';
+    document.getElementById('sc-author').value = data.author || '';
+    document.getElementById('sc-publisher').value = data.publisher || '';
+    document.getElementById('sc-platform').value = data.platform || 'kyobo';
+    document.getElementById('sc-desc').value = data.description || '';
+    document.getElementById('sc-link').value = data.link || '';
+    document.getElementById('sc-image').value = '';
+    scModalTitle.textContent = '내 책 수정하기';
+    scSubmitBtn.textContent = '수정하기';
+    scStatus.textContent = '이미지를 새로 첨부하지 않으면 기존 표지 이미지가 그대로 유지됩니다.';
+    scModal.style.display = 'flex';
+  }
+
+  async function scDeletePost(docId) {
+    const data = scDocsById[docId];
+    if (!data) return;
+    const user = firebase.auth().currentUser;
+    if (!user || user.email !== data.userEmail) { alert('본인이 등록한 글만 삭제할 수 있습니다.'); return; }
+    if (!confirm('정말 삭제하시겠어요? 삭제한 글은 복구할 수 없습니다.')) return;
+    try {
+      await db.collection('showcase').doc(docId).delete();
+    } catch (err) {
+      alert('삭제 실패: ' + err.message);
+    }
+  }
+
+  scGrid.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.showcase-edit-btn');
+    const delBtn = e.target.closest('.showcase-delete-btn');
+    if (editBtn) scOpenEditModal(editBtn.dataset.id);
+    if (delBtn) scDeletePost(delBtn.dataset.id);
+  });
+
   scForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const user = firebase.auth().currentUser;
@@ -575,37 +630,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = document.getElementById('sc-image').files[0];
 
     scSubmitBtn.disabled = true;
-    scStatus.textContent = '등록 중입니다...';
+    scStatus.textContent = '저장 중입니다...';
 
     try {
-      let coverImage = '';
+      const payload = { title, author, publisher, platform, description, link };
+
       if (file) {
         scStatus.textContent = '이미지를 최적화하는 중입니다...';
         const compressed = await compressShowcaseImage(file);
-        coverImage = await scBlobToBase64(compressed);
+        payload.coverImage = await scBlobToBase64(compressed);
       }
 
-      await db.collection('showcase').add({
-        title, author, publisher, platform, description, link, coverImage,
-        userEmail: user.email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      if (scEditingId) {
+        const existing = scDocsById[scEditingId];
+        if (!existing || existing.userEmail !== user.email) { alert('본인이 등록한 글만 수정할 수 있습니다.'); return; }
+        await db.collection('showcase').doc(scEditingId).update(payload);
+        scStatus.textContent = '수정되었습니다!';
+      } else {
+        payload.coverImage = payload.coverImage || '';
+        payload.userEmail = user.email;
+        payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection('showcase').add(payload);
+        scStatus.textContent = '등록되었습니다!';
+      }
 
-      scStatus.textContent = '등록되었습니다!';
-      scForm.reset();
-      setTimeout(() => { scModal.style.display = 'none'; scStatus.textContent = ''; }, 1000);
+      setTimeout(() => { scModal.style.display = 'none'; scResetFormToCreateMode(); }, 900);
     } catch (err) {
-      scStatus.textContent = '등록 실패: ' + err.message;
+      scStatus.textContent = '저장 실패: ' + err.message;
     } finally {
       scSubmitBtn.disabled = false;
     }
   });
 
   function renderShowcase(docs) {
+    scDocsById = {};
     if (docs.length === 0) { scGrid.innerHTML = ''; scEmpty.style.display = 'block'; return; }
     scEmpty.style.display = 'none';
+    const currentEmail = firebase.auth().currentUser ? firebase.auth().currentUser.email : null;
+
     scGrid.innerHTML = docs.map((d) => {
       const data = d.data();
+      scDocsById[d.id] = data;
       const img = data.coverImage || '';
       const tag = platformLabel[data.platform] || '기타';
       const tagClass = data.platform === 'bookk' ? 'bookk' : (data.platform === 'other' ? 'other' : '');
@@ -613,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const authorSafe = data.author ? scEscapeHtml(data.author) : '';
       const descSafe = data.description ? scEscapeHtml(data.description) : '';
       const linkSafe = data.link ? scEscapeHtml(data.link) : '';
+      const isOwner = currentEmail && data.userEmail === currentEmail;
       return '<div class="showcase-card">' +
         (img ? '<img class="showcase-card-img" src="' + img + '" alt="' + titleSafe + ' 표지" loading="lazy">' : '') +
         '<div class="showcase-card-body">' +
@@ -621,6 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (authorSafe ? '<div class="showcase-card-author">' + authorSafe + '</div>' : '') +
         (descSafe ? '<div class="showcase-card-desc">' + descSafe + '</div>' : '') +
         (linkSafe ? '<a class="showcase-card-link" href="' + linkSafe + '" target="_blank" rel="noopener noreferrer">구매하러 가기</a>' : '') +
+        (isOwner ? '<div class="showcase-card-actions"><button type="button" class="showcase-edit-btn" data-id="' + d.id + '">수정</button><button type="button" class="showcase-delete-btn" data-id="' + d.id + '">삭제</button></div>' : '') +
         '</div></div>';
     }).join('');
   }
@@ -631,6 +698,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('쇼케이스 로드 실패', err);
     scEmpty.textContent = '갤러리를 불러오지 못했습니다.';
     scEmpty.style.display = 'block';
+  });
+
+  firebase.auth().onAuthStateChanged(() => {
+    db.collection('showcase').orderBy('createdAt', 'desc').limit(60).get().then((snapshot) => {
+      renderShowcase(snapshot.docs);
+    });
   });
 </script>
 </body>
